@@ -1,10 +1,12 @@
 import { SectionDefinition, PageElement } from "@/types";
 
 export const sectionLibrary: SectionDefinition[] = [
-  // ==================== 1. NAVIGATION ====================
+  // =========================================================================
+  // 1. NAVIGATION
+  // =========================================================================
   {
     id: "prof-navbar",
-    name: "Navbar — Corporate Wordmark",
+    name: "Navigation — Modern Wordmark",
     category: "NAVIGATION",
     settings: {
       backgroundColor: "var(--theme-bg)",
@@ -30,7 +32,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-nav-links",
         type: "text",
         props: {
-          text: "About Us     /     Our Services     /     Process     /     Work     /     Contact",
+          text: "About    /    Services    /    Process    /    Work    /    Contact",
           fontSize: "13px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -54,89 +56,122 @@ export const sectionLibrary: SectionDefinition[] = [
     ],
   },
 
-  // ==================== 2. HERO (High-Fidelity Full-Bleed & Clean Background Layout) ====================
+  // =========================================================================
+  // 2. HERO (Sophisticated Two-Column Editorial Grid)
+  // =========================================================================
   {
     id: "prof-hero",
-    name: "Hero — Corporate Premium Banner",
+    name: "Hero — Two-Column Split",
     category: "HERO",
     settings: {
-      useBackgroundImage: true,
-      backgroundImage: "{{assets.hero}}",
-      overlayOpacity: "0.5",
-      alignment: "center",
       backgroundColor: "var(--theme-bg)",
-      paddingTop: { desktop: "140px", tablet: "110px", mobile: "80px" },
-      paddingBottom: { desktop: "140px", tablet: "110px", mobile: "80px" },
-      containerWidth: "max-w-5xl",
-      flexDirection: "col",
-      gap: "24px",
+      paddingTop: { desktop: "90px", tablet: "70px", mobile: "50px" },
+      paddingBottom: { desktop: "90px", tablet: "70px", mobile: "50px" },
+      containerWidth: "max-w-7xl",
+      flexDirection: "row",
+      gap: "48px",
     },
     elements: [
+      // Left Column: Text Content & CTAs
       {
-        id: "prof-hero-eyebrow",
-        type: "text",
+        id: "prof-hero-left-col",
+        type: "section",
         props: {
-          text: "INDEPENDENT CONSULTING",
-          fontSize: "13px",
-          fontWeight: "800",
-          color: "var(--theme-primary)",
-          alignment: "center",
+          backgroundColor: "transparent",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          containerWidth: "w-full",
+          flexDirection: "col",
+          gap: "20px",
         },
+        children: [
+          {
+            id: "prof-hero-eyebrow",
+            type: "text",
+            props: {
+              text: "INDEPENDENT CONSULTING",
+              fontSize: "12px",
+              fontWeight: "800",
+              color: "var(--theme-primary)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-hero-headline",
+            type: "heading",
+            props: {
+              text: "Build a business that is ready for what comes next.",
+              fontSize: { desktop: "46px", tablet: "38px", mobile: "30px" },
+              fontWeight: "800",
+              color: "var(--theme-primary)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-hero-desc",
+            type: "text",
+            props: {
+              text: "We help growing companies clarify their strategy, strengthen their digital presence, and build systems that scale.",
+              fontSize: "15px",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-hero-btn-primary",
+            type: "button",
+            props: {
+              text: "Let's Talk",
+              url: "mailto:partner@northstar.co",
+              backgroundColor: "var(--theme-primary)",
+              textColor: "var(--theme-bg)",
+              paddingX: "22px",
+              paddingY: "11px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "14px",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-hero-btn-secondary",
+            type: "button",
+            props: {
+              text: "Explore Our Work",
+              url: "#",
+              backgroundColor: "transparent",
+              textColor: "var(--theme-primary)",
+              paddingX: "22px",
+              paddingY: "11px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "14px",
+              alignment: "left",
+              style: "outline",
+            },
+          },
+        ],
       },
+      // Right Column: Controlled Aspect Image
       {
-        id: "prof-hero-title",
-        type: "heading",
+        id: "prof-hero-image",
+        type: "image",
         props: {
-          text: "NORTHSTAR CONSULTING",
-          fontSize: "16px",
-          fontWeight: "800",
-          color: "var(--theme-foreground)",
-          alignment: "center",
-        },
-      },
-      {
-        id: "prof-hero-headline",
-        type: "heading",
-        props: {
-          text: "Strategy for businesses ready to grow.",
-          fontSize: { desktop: "54px", tablet: "42px", mobile: "34px" },
-          fontWeight: "800",
-          color: "var(--theme-primary)",
-          alignment: "center",
-        },
-      },
-      {
-        id: "prof-hero-desc",
-        type: "text",
-        props: {
-          text: "Northstar Consulting helps growing companies simplify operations, sharpen brand strategy, and build visual systems that scale.",
-          fontSize: "18px",
-          color: "var(--theme-foreground)",
-          alignment: "center",
-        },
-      },
-      {
-        id: "prof-hero-btn",
-        type: "button",
-        props: {
-          text: "Consult Our Partners",
-          url: "mailto:partner@northstar.co",
-          backgroundColor: "var(--theme-primary)",
-          textColor: "var(--theme-bg)",
-          paddingX: "26px",
-          paddingY: "13px",
-          borderRadius: "var(--radius-sm)",
-          fontSize: "15px",
+          src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
+          alt: "Corporate visual landscape photo",
+          width: "100%",
+          height: "380px",
+          borderRadius: "var(--radius-lg)",
           alignment: "center",
         },
       },
     ],
   },
 
-  // ==================== 3. TRUST / INTRO STRIP ====================
+  // =========================================================================
+  // 3. TRUST BAR (Restrained Typography Logos)
+  // =========================================================================
   {
     id: "prof-trust",
-    name: "Trust — Brand Trust strip",
+    name: "Trust — Brand Logos Strip",
     category: "SOCIAL",
     settings: {
       backgroundColor: "var(--theme-muted)",
@@ -151,17 +186,17 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-trust-lbl",
         type: "text",
         props: {
-          text: "Trusted by ambitious teams globally:",
+          text: "Trusted by ambitious teams:",
           fontSize: "13px",
           color: "var(--theme-foreground)",
           alignment: "left",
         },
       },
       {
-        id: "prof-trust-p1",
+        id: "prof-trust-logo1",
         type: "heading",
         props: {
-          text: "•  APEX",
+          text: "APEX",
           fontSize: "14px",
           fontWeight: "800",
           color: "var(--theme-foreground)",
@@ -169,10 +204,10 @@ export const sectionLibrary: SectionDefinition[] = [
         },
       },
       {
-        id: "prof-trust-p2",
+        id: "prof-trust-logo2",
         type: "heading",
         props: {
-          text: "•  VERTEX",
+          text: "VERTEX",
           fontSize: "14px",
           fontWeight: "800",
           color: "var(--theme-foreground)",
@@ -180,10 +215,21 @@ export const sectionLibrary: SectionDefinition[] = [
         },
       },
       {
-        id: "prof-trust-p3",
+        id: "prof-trust-logo3",
         type: "heading",
         props: {
-          text: "•  ACME",
+          text: "ACME",
+          fontSize: "14px",
+          fontWeight: "800",
+          color: "var(--theme-foreground)",
+          alignment: "center",
+        },
+      },
+      {
+        id: "prof-trust-logo4",
+        type: "heading",
+        props: {
+          text: "NORTHSTAR",
           fontSize: "14px",
           fontWeight: "800",
           color: "var(--theme-foreground)",
@@ -193,10 +239,12 @@ export const sectionLibrary: SectionDefinition[] = [
     ],
   },
 
-  // ==================== 4. SERVICES ====================
+  // =========================================================================
+  // 4. SERVICES (3 Card Grid Columns)
+  // =========================================================================
   {
     id: "prof-services",
-    name: "Services — Structured Cards",
+    name: "Services — Structured Column Cards",
     category: "SERVICES",
     settings: {
       backgroundColor: "var(--theme-bg)",
@@ -208,96 +256,192 @@ export const sectionLibrary: SectionDefinition[] = [
     },
     elements: [
       {
-        id: "prof-services-h",
-        type: "heading",
+        id: "prof-services-eyebrow",
+        type: "text",
         props: {
-          text: "What We Do",
-          fontSize: "32px",
+          text: "WHAT WE DO",
+          fontSize: "12px",
           fontWeight: "800",
           color: "var(--theme-primary)",
           alignment: "center",
         },
       },
       {
-        id: "prof-services-t",
-        type: "text",
+        id: "prof-services-h",
+        type: "heading",
         props: {
-          text: "Our core frameworks are engineered for high-performance visual delivery and operational scaling.",
-          fontSize: "15px",
-          color: "var(--theme-foreground)",
+          text: "Strategy, design, and digital experiences that move businesses forward.",
+          fontSize: "30px",
+          fontWeight: "800",
+          color: "var(--theme-primary)",
           alignment: "center",
         },
       },
+      // Cards Row Container
       {
-        id: "prof-services-card1-title",
-        type: "heading",
+        id: "prof-services-cards-grid",
+        type: "section",
         props: {
-          text: "01. Brand & Identity Strategy",
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "var(--theme-foreground)",
-          alignment: "left",
+          backgroundColor: "transparent",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          containerWidth: "w-full",
+          flexDirection: "row",
+          gap: "24px",
         },
-      },
-      {
-        id: "prof-services-card1-desc",
-        type: "text",
-        props: {
-          text: "We help you clarify your market positioning, define core values tokens, and map a consistent visual brand voice across all touchpoints.",
-          fontSize: "14px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-services-card2-title",
-        type: "heading",
-        props: {
-          text: "02. Digital Layout Design",
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-services-card2-desc",
-        type: "text",
-        props: {
-          text: "Engineering high-performance modular Next.js layouts, responsive CSS variables configurations, and strict design token grids.",
-          fontSize: "14px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-services-card3-title",
-        type: "heading",
-        props: {
-          text: "03. Systems Consultation",
-          fontSize: "18px",
-          fontWeight: "700",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-services-card3-desc",
-        type: "text",
-        props: {
-          text: "Aligning company toolsets, structuring database schemas, optimizing rendering pipelines, and deployment strategy.",
-          fontSize: "14px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
+        children: [
+          // Card 1
+          {
+            id: "prof-services-card1",
+            type: "section",
+            props: {
+              backgroundColor: "var(--theme-muted)",
+              paddingTop: "24px",
+              paddingBottom: "24px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "12px",
+            },
+            children: [
+              {
+                id: "prof-services-card1-num",
+                type: "text",
+                props: {
+                  text: "01",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card1-title",
+                type: "heading",
+                props: {
+                  text: "STRATEGY",
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card1-desc",
+                type: "text",
+                props: {
+                  text: "Clarify your direction and build a roadmap for meaningful growth.",
+                  fontSize: "14px",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+          // Card 2
+          {
+            id: "prof-services-card2",
+            type: "section",
+            props: {
+              backgroundColor: "var(--theme-muted)",
+              paddingTop: "24px",
+              paddingBottom: "24px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "12px",
+            },
+            children: [
+              {
+                id: "prof-services-card2-num",
+                type: "text",
+                props: {
+                  text: "02",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card2-title",
+                type: "heading",
+                props: {
+                  text: "DIGITAL EXPERIENCES",
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card2-desc",
+                type: "text",
+                props: {
+                  text: "Create thoughtful websites and digital products that turn attention into action.",
+                  fontSize: "14px",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+          // Card 3
+          {
+            id: "prof-services-card3",
+            type: "section",
+            props: {
+              backgroundColor: "var(--theme-muted)",
+              paddingTop: "24px",
+              paddingBottom: "24px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "12px",
+            },
+            children: [
+              {
+                id: "prof-services-card3-num",
+                type: "text",
+                props: {
+                  text: "03",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card3-title",
+                type: "heading",
+                props: {
+                  text: "CREATIVE DIRECTION",
+                  fontSize: "18px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-services-card3-desc",
+                type: "text",
+                props: {
+                  text: "Bring your brand, content, and customer experience together into one coherent identity.",
+                  fontSize: "14px",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+        ],
       },
     ],
   },
 
-  // ==================== 5. ABOUT ====================
+  // =========================================================================
+  // 5. ABOUT (Split Editorial Layout)
+  // =========================================================================
   {
     id: "prof-about",
-    name: "About — Split Layout",
+    name: "About — Split Narrative",
     category: "ABOUT",
     settings: {
       backgroundColor: "var(--theme-bg)",
@@ -313,53 +457,81 @@ export const sectionLibrary: SectionDefinition[] = [
         type: "image",
         props: {
           src: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
-          alt: "Our consulting space",
+          alt: "About team workshop photographic cover",
           width: "100%",
           height: "320px",
           borderRadius: "var(--radius-md)",
           alignment: "center",
         },
       },
+      // Right Content stack
       {
-        id: "prof-about-heading",
-        type: "heading",
+        id: "prof-about-content",
+        type: "section",
         props: {
-          text: "About Our Philosophy",
-          fontSize: { desktop: "30px", tablet: "26px", mobile: "22px" },
-          fontWeight: "800",
-          color: "var(--theme-primary)",
-          alignment: "left",
+          backgroundColor: "transparent",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          containerWidth: "w-full",
+          flexDirection: "col",
+          gap: "18px",
         },
-      },
-      {
-        id: "prof-about-text",
-        type: "text",
-        props: {
-          text: "We are a specialized advisory studio centered around structural web layouts. We help ambitious companies simplify operations, sharpen brand strategy, and build visual systems that scale.",
-          fontSize: "15px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-about-btn",
-        type: "button",
-        props: {
-          text: "Read Our Philosophy",
-          url: "mailto:partner@northstar.co",
-          backgroundColor: "var(--theme-primary)",
-          textColor: "var(--theme-bg)",
-          paddingX: "18px",
-          paddingY: "10px",
-          borderRadius: "var(--radius-sm)",
-          fontSize: "14px",
-          alignment: "left",
-        },
+        children: [
+          {
+            id: "prof-about-eyebrow",
+            type: "text",
+            props: {
+              text: "A DIFFERENT WAY TO BUILD",
+              fontSize: "12px",
+              fontWeight: "800",
+              color: "var(--theme-primary)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-about-heading",
+            type: "heading",
+            props: {
+              text: "We combine strategic thinking, thoughtful design, and modern technology.",
+              fontSize: "28px",
+              fontWeight: "800",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-about-text",
+            type: "text",
+            props: {
+              text: "We collaborate with clients to design digital experiences that are useful, memorable, and built to last. Our work bypasses raw spacing overrides in favor of pure theme tokens cohesion.",
+              fontSize: "15px",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-about-btn",
+            type: "button",
+            props: {
+              text: "Our Philosophy",
+              url: "mailto:partner@northstar.co",
+              backgroundColor: "var(--theme-primary)",
+              textColor: "var(--theme-bg)",
+              paddingX: "18px",
+              paddingY: "9px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "14px",
+              alignment: "left",
+            },
+          },
+        ],
       },
     ],
   },
 
-  // ==================== 6. PROCESS ====================
+  // =========================================================================
+  // 6. PROCESS (4 Beautiful Pathway Steps)
+  // =========================================================================
   {
     id: "prof-process",
     name: "Process — 4 Step Pathway",
@@ -377,101 +549,182 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-process-h",
         type: "heading",
         props: {
-          text: "Our Seamless Process",
+          text: "How we work",
           fontSize: "30px",
           fontWeight: "800",
           color: "var(--theme-primary)",
           alignment: "center",
         },
       },
+      // Steps Row Container
       {
-        id: "prof-process-s1-title",
-        type: "heading",
+        id: "prof-process-steps-row",
+        type: "section",
         props: {
-          text: "01 / DISCOVER",
-          fontSize: "16px",
-          fontWeight: "800",
-          color: "var(--theme-foreground)",
-          alignment: "left",
+          backgroundColor: "transparent",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          containerWidth: "w-full",
+          flexDirection: "row",
+          gap: "20px",
         },
-      },
-      {
-        id: "prof-process-s1-desc",
-        type: "text",
-        props: {
-          text: "Uncovering your system requirements, mapping existing brand design tokens debt, and documenting structural goals.",
-          fontSize: "13px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s2-title",
-        type: "heading",
-        props: {
-          text: "02 / DEFINE",
-          fontSize: "16px",
-          fontWeight: "800",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s2-desc",
-        type: "text",
-        props: {
-          text: "Clarifying layout and column hierarchies, choosing custom palettes, and establishing robust type scales.",
-          fontSize: "13px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s3-title",
-        type: "heading",
-        props: {
-          text: "03 / BUILD",
-          fontSize: "16px",
-          fontWeight: "800",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s3-desc",
-        type: "text",
-        props: {
-          text: "Compiling type-safe, responsive modular components and wiring them cleanly into active section grids.",
-          fontSize: "13px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s4-title",
-        type: "heading",
-        props: {
-          text: "04 / GROW",
-          fontSize: "16px",
-          fontWeight: "800",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-process-s4-desc",
-        type: "text",
-        props: {
-          text: "Expanding layout capability, optimizing responsive assets, and launching high-performance corporate sites.",
-          fontSize: "13px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
+        children: [
+          // Step 1
+          {
+            id: "prof-process-step1",
+            type: "section",
+            props: {
+              backgroundColor: "transparent",
+              paddingTop: "12px",
+              paddingBottom: "12px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "8px",
+            },
+            children: [
+              {
+                id: "prof-process-s1-num",
+                type: "text",
+                props: {
+                  text: "01",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-process-s1-title",
+                type: "heading",
+                props: {
+                  text: "DISCOVER",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+          // Step 2
+          {
+            id: "prof-process-step2",
+            type: "section",
+            props: {
+              backgroundColor: "transparent",
+              paddingTop: "12px",
+              paddingBottom: "12px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "8px",
+            },
+            children: [
+              {
+                id: "prof-process-s2-num",
+                type: "text",
+                props: {
+                  text: "02",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-process-s2-title",
+                type: "heading",
+                props: {
+                  text: "DEFINE",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+          // Step 3
+          {
+            id: "prof-process-step3",
+            type: "section",
+            props: {
+              backgroundColor: "transparent",
+              paddingTop: "12px",
+              paddingBottom: "12px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "8px",
+            },
+            children: [
+              {
+                id: "prof-process-s3-num",
+                type: "text",
+                props: {
+                  text: "03",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-process-s3-title",
+                type: "heading",
+                props: {
+                  text: "CREATE",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+          // Step 4
+          {
+            id: "prof-process-step4",
+            type: "section",
+            props: {
+              backgroundColor: "transparent",
+              paddingTop: "12px",
+              paddingBottom: "12px",
+              containerWidth: "w-full",
+              flexDirection: "col",
+              gap: "8px",
+            },
+            children: [
+              {
+                id: "prof-process-s4-num",
+                type: "text",
+                props: {
+                  text: "04",
+                  fontSize: "14px",
+                  fontWeight: "800",
+                  color: "var(--theme-primary)",
+                  alignment: "left",
+                },
+              },
+              {
+                id: "prof-process-s4-title",
+                type: "heading",
+                props: {
+                  text: "REFINE",
+                  fontSize: "16px",
+                  fontWeight: "800",
+                  color: "var(--theme-foreground)",
+                  alignment: "left",
+                },
+              },
+            ],
+          },
+        ],
       },
     ],
   },
 
-  // ==================== 7. FEATURED CASE STUDY ====================
+  // =========================================================================
+  // 7. FEATURED WORK (Large Editorial Case-Study Layout)
+  // =========================================================================
   {
     id: "prof-case-study",
     name: "Case Study — Editorial Spotlight",
@@ -497,54 +750,82 @@ export const sectionLibrary: SectionDefinition[] = [
           alignment: "center",
         },
       },
+      // Editorial Column details
       {
-        id: "prof-case-study-h",
-        type: "heading",
+        id: "prof-case-study-details",
+        type: "section",
         props: {
-          text: "Selected Project Case Study",
-          fontSize: { desktop: "28px", tablet: "24px", mobile: "20px" },
-          fontWeight: "800",
-          color: "var(--theme-primary)",
-          alignment: "left",
+          backgroundColor: "transparent",
+          paddingTop: "0px",
+          paddingBottom: "0px",
+          containerWidth: "w-full",
+          flexDirection: "col",
+          gap: "18px",
         },
-      },
-      {
-        id: "prof-case-study-d",
-        type: "text",
-        props: {
-          text: "We collaborated closely with the teams to engineer a fully responsive, type-safe design tokens platform from scratch, reducing design debt by over 70% and increasing delivery speeds.",
-          fontSize: "15px",
-          color: "var(--theme-foreground)",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-case-study-btn",
-        type: "button",
-        props: {
-          text: "Read Case Study",
-          url: "mailto:partner@northstar.co",
-          backgroundColor: "var(--theme-primary)",
-          textColor: "var(--theme-bg)",
-          paddingX: "18px",
-          paddingY: "10px",
-          borderRadius: "var(--radius-sm)",
-          fontSize: "14px",
-          alignment: "left",
-        },
+        children: [
+          {
+            id: "prof-case-study-eyebrow",
+            type: "text",
+            props: {
+              text: "FEATURED PROJECT",
+              fontSize: "12px",
+              fontWeight: "800",
+              color: "var(--theme-primary)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-case-study-title",
+            type: "heading",
+            props: {
+              text: "Redesigning Global Brand Experiences",
+              fontSize: "28px",
+              fontWeight: "800",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-case-study-desc",
+            type: "text",
+            props: {
+              text: "We collaborated closely with the teams to engineer a fully responsive, type-safe design tokens platform from scratch, reducing design debt by over 70% and increasing delivery speeds.",
+              fontSize: "15px",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
+            id: "prof-case-study-btn",
+            type: "button",
+            props: {
+              text: "View Project",
+              url: "mailto:partner@northstar.co",
+              backgroundColor: "var(--theme-primary)",
+              textColor: "var(--theme-bg)",
+              paddingX: "18px",
+              paddingY: "10px",
+              borderRadius: "var(--radius-sm)",
+              fontSize: "14px",
+              alignment: "left",
+            },
+          },
+        ],
       },
     ],
   },
 
-  // ==================== 8. TESTIMONIAL ====================
+  // =========================================================================
+  // 8. TESTIMONIAL (Large Quotation & Generous Whitespace)
+  // =========================================================================
   {
     id: "prof-testimonials",
     name: "Testimonials — Star Quote",
     category: "SOCIAL",
     settings: {
       backgroundColor: "var(--theme-muted)",
-      paddingTop: { desktop: "80px", tablet: "60px", mobile: "45px" },
-      paddingBottom: { desktop: "80px", tablet: "60px", mobile: "45px" },
+      paddingTop: { desktop: "90px", tablet: "75px", mobile: "50px" },
+      paddingBottom: { desktop: "90px", tablet: "75px", mobile: "50px" },
       containerWidth: "max-w-3xl",
       flexDirection: "col",
       gap: "24px",
@@ -554,7 +835,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-testi-quote",
         type: "heading",
         props: {
-          text: "“The team turned an incredibly complex operational challenge into a clear, beautiful, and modular visual design system that exceeded our goals.”",
+          text: "“Northstar helped us turn a complicated business challenge into a clear, actionable plan.”",
           fontSize: { desktop: "24px", tablet: "20px", mobile: "18px" },
           fontWeight: "600",
           color: "var(--theme-primary)",
@@ -574,7 +855,9 @@ export const sectionLibrary: SectionDefinition[] = [
     ],
   },
 
-  // ==================== 9. CTA ====================
+  // =========================================================================
+  // 9. CTA (Large Visually Distinctive Conversion Banner)
+  // =========================================================================
   {
     id: "prof-cta",
     name: "CTA — Conversion Block",
@@ -592,7 +875,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-cta-h",
         type: "heading",
         props: {
-          text: "Let's Build Something Better Together",
+          text: "Let's build something better.",
           fontSize: "36px",
           fontWeight: "800",
           color: "var(--theme-bg)",
@@ -603,7 +886,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-cta-t",
         type: "text",
         props: {
-          text: "Explore what a collaborative partnership can do to clarify your systems, strengthen style coherence, and deploy websites.",
+          text: "Tell us what you're working on and let's figure out where to go next.",
           fontSize: "16px",
           color: "var(--theme-bg)",
           alignment: "center",
@@ -613,7 +896,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-cta-b",
         type: "button",
         props: {
-          text: "Start Conversation",
+          text: "Let's Talk",
           url: "mailto:partner@northstar.co",
           backgroundColor: "var(--theme-bg)",
           textColor: "var(--theme-primary)",
@@ -627,7 +910,9 @@ export const sectionLibrary: SectionDefinition[] = [
     ],
   },
 
-  // ==================== 10. FOOTER ====================
+  // =========================================================================
+  // 10. FOOTER
+  // =========================================================================
   {
     id: "prof-footer",
     name: "Footer — Unified Corporate",

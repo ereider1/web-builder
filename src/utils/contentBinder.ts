@@ -67,6 +67,162 @@ export function replaceTokensInValue(
 }
 
 /**
+ * Traverses and binds element props recursively. Handles deeply nested columns, grids and cards.
+ */
+export function bindElementRecursively(
+  el: PageElement,
+  secType: string,
+  profile: any,
+  images: any,
+  fullAddress: string
+): PageElement {
+  const props = { ...el.props };
+
+  // 1. NAVBAR SECTION
+  if (secType === "simple-navbar" || secType === "prof-navbar") {
+    if (el.id.includes("brand")) {
+      props.text = profile.name;
+    }
+    if (el.id.includes("cta")) {
+      props.text = "Let's Talk";
+      props.url = `mailto:${profile.email}`;
+    }
+  }
+
+  // 2. HERO SECTION
+  if (secType === "prof-hero") {
+    if (el.id.includes("eyebrow")) {
+      props.text = "INDEPENDENT CONSULTING";
+    }
+    if (el.id.includes("title")) {
+      props.text = profile.name;
+    }
+    if (el.id.includes("headline")) {
+      props.text = profile.tagline;
+    }
+    if (el.id.includes("desc")) {
+      props.text = `${profile.name} ${profile.description}`;
+    }
+    if (el.id.includes("btn-primary")) {
+      props.text = "Let's Talk";
+      props.url = `mailto:${profile.email}`;
+    }
+    if (el.id.includes("btn-secondary")) {
+      props.text = "Explore Our Work";
+    }
+    if (el.id.includes("image")) {
+      props.src = images.hero;
+    }
+  }
+
+  // 3. SERVICES SECTION
+  if (secType === "prof-services") {
+    if (el.id.includes("card1-title")) {
+      props.text = "STRATEGY";
+    }
+    if (el.id.includes("card1-desc")) {
+      props.text = "Clarify your direction and build a roadmap for meaningful growth.";
+    }
+    if (el.id.includes("card2-title")) {
+      props.text = "DIGITAL EXPERIENCES";
+    }
+    if (el.id.includes("card2-desc")) {
+      props.text = "Create thoughtful websites and digital products that turn attention into action.";
+    }
+    if (el.id.includes("card3-title")) {
+      props.text = "CREATIVE DIRECTION";
+    }
+    if (el.id.includes("card3-desc")) {
+      props.text = "Bring your brand, content, and customer experience together into one coherent identity.";
+    }
+  }
+
+  // 4. ABOUT SECTION
+  if (secType === "prof-about") {
+    if (el.id.includes("img")) {
+      props.src = images.about;
+    }
+    if (el.id.includes("eyebrow")) {
+      props.text = "A DIFFERENT WAY TO BUILD";
+    }
+    if (el.id.includes("heading")) {
+      props.text = "We combine strategic thinking, thoughtful design, and modern technology.";
+    }
+    if (el.id.includes("text")) {
+      props.text = `${profile.name} is a specialized advisory studio. We combine strategic thinking, thoughtful design, and modern technology to create digital experiences that are useful, memorable, and built to last.`;
+    }
+    if (el.id.includes("btn")) {
+      props.text = "Our Philosophy";
+      props.url = `mailto:${profile.email}`;
+    }
+  }
+
+  // 5. CASE STUDY SECTION
+  if (secType === "prof-case-study") {
+    if (el.id.includes("img")) {
+      props.src = images.caseStudy;
+    }
+    if (el.id.includes("eyebrow")) {
+      props.text = "FEATURED PROJECT";
+    }
+    if (el.id.includes("title")) {
+      props.text = "Redesigning Global Brand Experiences";
+    }
+    if (el.id.includes("desc")) {
+      props.text = "We collaborated closely with the teams to engineer a fully responsive, type-safe design tokens platform from scratch, reducing design debt by over 70% and increasing delivery speeds.";
+    }
+    if (el.id.includes("btn")) {
+      props.text = "View Project";
+      props.url = `mailto:${profile.email}`;
+    }
+  }
+
+  // 6. TESTIMONIAL SECTION
+  if (secType === "testimonials" || secType === "prof-testimonials") {
+    if (el.id.includes("quote")) {
+      props.text = `“${profile.name} helped us turn a complicated business challenge into a clear, actionable plan.”`;
+    }
+    if (el.id.includes("author")) {
+      props.text = `— Lead Product Designer, Apex Systems`;
+    }
+  }
+
+  // 7. CTA BANNER SECTION
+  if (secType === "cta" || secType === "prof-cta") {
+    if (el.id.includes("h")) {
+      props.text = "Let's build something better.";
+    }
+    if (el.id.includes("t")) {
+      props.text = "Tell us what you're working on and let's figure out where to go next.";
+    }
+    if (el.id.includes("b")) {
+      props.text = "Let's Talk";
+      props.url = `mailto:${profile.email}`;
+    }
+  }
+
+  // 8. FOOTER SECTION
+  if (secType === "simple-footer" || secType === "prof-footer") {
+    if (el.id.includes("cpy")) {
+      props.text = `© 2026 ${profile.name}. All rights reserved. Address: ${fullAddress}`;
+    }
+    if (el.id.includes("lnks")) {
+      props.text = `Tel: ${profile.phone}  |  Email: ${profile.email}`;
+    }
+  }
+
+  const boundChildren = el.children
+    ? el.children.map((child) => bindElementRecursively(child, secType, profile, images, fullAddress))
+    : undefined;
+
+  return {
+    ...el,
+    props,
+    ...(boundChildren ? { children: boundChildren } : {}),
+  };
+}
+
+/**
  * Maps Business Profile and Brand Assets into the structured Content Slots of the
  * high-fidelity 'Professional Services' Template. The Template OWN the layout, 
  * typography, aspect ratios, responsive columns, and CTA placements; user data
@@ -90,7 +246,7 @@ export function bindProfessionalServices(
   };
 
   const images = {
-    logo: assets.logo || "", // transparent or typographical wordmark fallback rendered conditionally
+    logo: assets.logo || "", // transparent fallback rendered conditionally
     hero: assets.hero || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
     about: assets.additionalImages?.[0] || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
     caseStudy: assets.additionalImages?.[1] || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800",
@@ -99,145 +255,11 @@ export function bindProfessionalServices(
   const fullAddress = [profile.address, profile.city, profile.country].filter(Boolean).join(", ");
 
   return sections.map((sec) => {
-    // Clone section settings
     const settings = { ...sec.settings };
     
-    // Deep map element props based on predefined layout content slots
+    // Process top-level elements of the section and their child nodes recursively!
     const elements = sec.elements.map((el) => {
-      const props = { ...el.props };
-
-      // 1. NAVBAR SECTION
-      if (sec.type === "simple-navbar" || sec.type === "prof-navbar") {
-        if (el.id.includes("brand")) {
-          // Fallback typographical logo wordmark or transparent logo image
-          props.text = profile.name;
-        }
-        if (el.id.includes("cta")) {
-          props.text = "Let's Talk";
-          props.url = `mailto:${profile.email}`;
-        }
-      }
-
-      // 2. HERO SECTION (Sophisticated two-column)
-      if (sec.type === "prof-hero") {
-        if (el.id.includes("eyebrow")) {
-          props.text = "INDEPENDENT CONSULTING";
-        }
-        if (el.id.includes("title")) {
-          props.text = profile.name; // Small controlled brand identifier
-        }
-        if (el.id.includes("headline")) {
-          props.text = profile.tagline; // Large editorial headline owned by template
-        }
-        if (el.id.includes("desc")) {
-          props.text = `${profile.name} ${profile.description}`; // Narrative copy
-        }
-        if (el.id.includes("btn")) {
-          props.text = "Consult Our Partners";
-          props.url = `mailto:${profile.email}`;
-        }
-        if (el.id.includes("image")) {
-          props.src = images.hero; // Crop/aspect ratio is pre-determined by elements styles
-        }
-      }
-
-      // 3. SERVICES SECTION (What we do - 3 cards)
-      if (sec.type === "prof-services") {
-        // Card 1
-        if (el.id.includes("card1-title")) {
-          props.text = "01. Brand & Identity Strategy";
-        }
-        if (el.id.includes("card1-desc")) {
-          props.text = "We help you clarify your market positioning, define core values tokens, and map a cohesive visual brand voice across all touchpoints.";
-        }
-        // Card 2
-        if (el.id.includes("card2-title")) {
-          props.text = "02. Digital Layout Design";
-        }
-        if (el.id.includes("card2-desc")) {
-          props.text = "Engineering high-performance modular Next.js layouts, responsive CSS variables configurations, and strict design token grids.";
-        }
-        // Card 3
-        if (el.id.includes("card3-title")) {
-          props.text = "03. Systems Consultation";
-        }
-        if (el.id.includes("card3-desc")) {
-          props.text = "Aligning company toolsets, structuring database schemas, optimizing rendering pipelines, and deployment strategy.";
-        }
-      }
-
-      // 4. ABOUT SECTION (Two-column split narrative)
-      if (sec.type === "prof-about") {
-        if (el.id.includes("img")) {
-          props.src = images.about;
-        }
-        if (el.id.includes("heading")) {
-          props.text = `About ${profile.name}`;
-        }
-        if (el.id.includes("text")) {
-          props.text = `We are a specialized advisory studio centered around structural web layouts. ${profile.name} helps ambitious companies simplify operations, strengthen brand strategy, and build visual systems that scale. We believe that visual design should not be separate from programmatic code.`;
-        }
-        if (el.id.includes("btn")) {
-          props.text = "Read Our Philosophy";
-          props.url = `mailto:${profile.email}`;
-        }
-      }
-
-      // 5. CASE STUDY SECTION (Featured editorial showcase)
-      if (sec.type === "prof-case-study") {
-        if (el.id.includes("img")) {
-          props.src = images.caseStudy;
-        }
-        if (el.id.includes("h")) {
-          props.text = `Selected Project Case Study`;
-        }
-        if (el.id.includes("d")) {
-          props.text = `We collaborated closely with the teams to engineer a fully responsive, type-safe design tokens platform from scratch, reducing design debt by over 70% and increasing delivery speeds.`;
-        }
-        if (el.id.includes("btn")) {
-          props.text = "Read Full Case Study";
-          props.url = `mailto:${profile.email}`;
-        }
-      }
-
-      // 6. TESTIMONIALS SECTION
-      if (sec.type === "testimonials" || sec.type === "prof-testimonials") {
-        if (el.id.includes("quote")) {
-          props.text = `“The team at ${profile.name} turned an incredibly complex operational challenge into a clear, beautiful, and modular visual design system that exceeded our goals.”`;
-        }
-        if (el.id.includes("author")) {
-          props.text = `— Lead Product Designer, Apex Systems`;
-        }
-      }
-
-      // 7. CTA BANNER SECTION
-      if (sec.type === "cta" || sec.type === "prof-cta") {
-        if (el.id.includes("h")) {
-          props.text = "Let's Build Something Better Together";
-        }
-        if (el.id.includes("t")) {
-          props.text = `Explore what a collaborative partnership with ${profile.name} can do to clarify your systems, strengthen style coherence, and deploy websites.`;
-        }
-        if (el.id.includes("b")) {
-          props.text = "Start Our Conversation";
-          props.url = `mailto:${profile.email}`;
-        }
-      }
-
-      // 8. FOOTER SECTION
-      if (sec.type === "simple-footer" || sec.type === "prof-footer") {
-        if (el.id.includes("cpy")) {
-          props.text = `© 2026 ${profile.name}. All rights reserved. Address: ${bAddressText(fullAddress)}`;
-        }
-        if (el.id.includes("lnks")) {
-          props.text = `Tel: ${profile.phone}  |  Email: ${profile.email}`;
-        }
-      }
-
-      return {
-        ...el,
-        props,
-      };
+      return bindElementRecursively(el, sec.type, profile, images, fullAddress);
     });
 
     return {
@@ -248,13 +270,8 @@ export function bindProfessionalServices(
   });
 }
 
-function bAddressText(addr: string) {
-  return addr || "100 Pine Street, San Francisco, CA, United States";
-}
-
 /**
  * Traverses a complete project tree and binds user assets & info.
- * Bypasses generic conversions to guarantee a highly polished template-first layout.
  */
 export function bindProject(
   project: Project,
