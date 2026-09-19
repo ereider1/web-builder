@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useBuilder } from "@/store/BuilderContext";
 import { componentRegistry } from "@/registry/ComponentRegistry";
 import { builtInThemes } from "@/theme/ThemeManager";
-import { PageElement, Theme } from "@/types";
+import { PageElement, PageSection, Theme } from "@/types";
 import {
   Trash2,
   Sliders,
@@ -12,23 +12,28 @@ import {
   Type,
   Maximize,
   Save,
-  HelpCircle,
   Monitor,
   Tablet,
   Smartphone,
   Check,
+  Columns,
+  Sparkles,
 } from "lucide-react";
 
-// Recursive helper to find the selected element in the tree
-function findElementInTree(
-  elements: PageElement[],
+// Helper to find a component inside the page's sections
+function findElementInSections(
+  sections: PageSection[],
   id: string
 ): PageElement | null {
-  for (const el of elements) {
-    if (el.id === id) return el;
-    if (el.children) {
-      const found = findElementInTree(el.children, id);
-      if (found) return found;
+  for (const sec of sections) {
+    for (const el of sec.elements) {
+      if (el.id === id) return el;
+      if (el.children) {
+        // Search inside nested grandchildren if any
+        for (const child of el.children) {
+          if (child.id === id) return child;
+        }
+      }
     }
   }
   return null;
@@ -40,12 +45,23 @@ export const RightInspector: React.FC = () => {
     updateElement,
     deleteElement,
     selectElement,
+    selectSection,
+    deleteSection,
+    duplicateSection,
+    updateSectionSettings,
     applyTheme,
     updateThemeProperty,
     saveAsCustomTheme,
   } = useBuilder();
 
-  const { selectedElementId, pageData, activeTheme, customThemes } = state;
+  const {
+    selectedElementId,
+    selectedSectionId,
+    activePageId,
+    project,
+    activeTheme,
+    customThemes,
+  } = state;
 
   const [activeBreakpointTab, setActiveBreakpointTab] = useState<
     "desktop" | "tablet" | "mobile"
@@ -54,8 +70,15 @@ export const RightInspector: React.FC = () => {
   const [customThemeName, setCustomThemeName] = useState<string>("");
   const [saveSuccess, setSaveSuccess] = useState<boolean>(false);
 
+  const activePage =
+    project.pages.find((p) => p.id === activePageId) || project.pages[0];
+
   const selectedElement = selectedElementId
-    ? findElementInTree(pageData.elements, selectedElementId)
+    ? findElementInSections(activePage.sections, selectedElementId)
+    : null;
+
+  const selectedSection = selectedSectionId
+    ? activePage.sections.find((s) => s.id === selectedSectionId)
     : null;
 
   const registryEntry = selectedElement
@@ -79,7 +102,6 @@ export const RightInspector: React.FC = () => {
           [activeBreakpointTab]: value,
         };
       } else {
-        // Upgrade flat primitive value to responsive object structure on the fly
         nextVal = {
           desktop: currentVal ?? "",
           tablet: "",
@@ -93,6 +115,36 @@ export const RightInspector: React.FC = () => {
     }
   };
 
+  const handleSectionSettingChange = (name: string, value: any, isResponsive = false) => {
+    if (!selectedSectionId || !selectedSection) return;
+
+    if (isResponsive) {
+      const currentVal = selectedSection.settings[name];
+      let nextVal: any;
+
+      if (
+        typeof currentVal === "object" &&
+        currentVal !== null &&
+        ("desktop" in currentVal || "tablet" in currentVal || "mobile" in currentVal)
+      ) {
+        nextVal = {
+          ...currentVal,
+          [activeBreakpointTab]: value,
+        };
+      } else {
+        nextVal = {
+          desktop: currentVal ?? "",
+          tablet: "",
+          mobile: "",
+          [activeBreakpointTab]: value,
+        };
+      }
+      updateSectionSettings(selectedSectionId, { [name]: nextVal });
+    } else {
+      updateSectionSettings(selectedSectionId, { [name]: value });
+    }
+  };
+
   const handleSaveTheme = (e: React.FormEvent) => {
     e.preventDefault();
     if (customThemeName.trim() === "") return;
@@ -102,18 +154,28 @@ export const RightInspector: React.FC = () => {
     setTimeout(() => setSaveSuccess(false), 3000);
   };
 
-  const handleDelete = () => {
-    if (selectedElementId) {
-      deleteElement(selectedElementId);
+  const handleComponentDelete = () => {
+    if (selectedElementId && selectedSectionId) {
+      deleteElement(selectedElementId, selectedSectionId);
     }
   };
 
-  const allThemes = [...builtInThemes, ...customThemes];
+  const handleSectionDelete = () => {
+    if (selectedSectionId) {
+      deleteSection(selectedSectionId);
+    }
+  };
+
+  const handleSectionDuplicate = () => {
+    if (selectedSectionId) {
+      duplicateSection(selectedSectionId);
+    }
+  };
 
   return (
     <aside className="w-72 border-l border-zinc-200 bg-white flex flex-col select-none shrink-0 overflow-y-auto">
       {selectedElement && registryEntry ? (
-        /* ==================== COMPONENT INSPECTOR ==================== */
+        /* ==================== 1. COMPONENT INSPECTOR ==================== */
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-zinc-200 bg-zinc-50 shrink-0 flex items-center justify-between">
@@ -137,7 +199,7 @@ export const RightInspector: React.FC = () => {
               </p>
             </div>
 
-            {/* Breakpoint Selector for Responsive Properties */}
+            {/* Breakpoint Selector */}
             <div className="bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 flex">
               <button
                 onClick={() => setActiveBreakpointTab("desktop")}
@@ -174,17 +236,16 @@ export const RightInspector: React.FC = () => {
               </button>
             </div>
 
-            {/* Dynamic Controls list */}
+            {/* Controls List */}
             <div className="flex flex-col gap-4">
               {registryEntry.controls.map((control) => {
                 const rawVal = selectedElement.props[control.name];
                 let isResponsiveActive = false;
                 let value = rawVal ?? control.defaultValue;
 
-                // Mark spacing and text sizes as responsive dynamically if requested
                 const isPropResponsive =
                   control.isResponsive ||
-                  ["fontSize", "paddingTop", "paddingBottom", "gap", "width", "height"].includes(
+                  ["fontSize", "paddingX", "paddingY", "gap", "width", "height"].includes(
                     control.name
                   );
 
@@ -197,16 +258,12 @@ export const RightInspector: React.FC = () => {
                   ) {
                     value = rawVal[activeBreakpointTab] ?? "";
                   } else {
-                    // For responsive properties, non-desktop values start empty (inheriting)
                     value = activeBreakpointTab === "desktop" ? rawVal ?? control.defaultValue : "";
                   }
                 }
 
                 return (
-                  <div
-                    key={control.name}
-                    className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3"
-                  >
+                  <div key={control.name} className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
                     <div className="flex items-center justify-between">
                       <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase flex items-center gap-1">
                         <span>{control.label}</span>
@@ -227,15 +284,9 @@ export const RightInspector: React.FC = () => {
                       <input
                         type="text"
                         value={value}
-                        placeholder={
-                          isResponsiveActive && activeBreakpointTab !== "desktop"
-                            ? "Inherited value..."
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handlePropChange(control.name, e.target.value, isResponsiveActive)
-                        }
-                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-zinc-800 font-medium transition-all bg-white"
+                        placeholder={isResponsiveActive && activeBreakpointTab !== "desktop" ? "Inherited..." : ""}
+                        onChange={(e) => handlePropChange(control.name, e.target.value, isResponsiveActive)}
+                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 text-zinc-800 font-medium bg-white"
                       />
                     )}
 
@@ -243,25 +294,17 @@ export const RightInspector: React.FC = () => {
                       <textarea
                         rows={4}
                         value={value}
-                        placeholder={
-                          isResponsiveActive && activeBreakpointTab !== "desktop"
-                            ? "Inherited content..."
-                            : ""
-                        }
-                        onChange={(e) =>
-                          handlePropChange(control.name, e.target.value, isResponsiveActive)
-                        }
-                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-zinc-800 font-medium resize-y transition-all min-h-[60px]"
+                        placeholder={isResponsiveActive && activeBreakpointTab !== "desktop" ? "Inherited..." : ""}
+                        onChange={(e) => handlePropChange(control.name, e.target.value, isResponsiveActive)}
+                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 text-zinc-800 font-medium min-h-[60px]"
                       />
                     )}
 
                     {control.type === "select" && (
                       <select
                         value={value}
-                        onChange={(e) =>
-                          handlePropChange(control.name, e.target.value, isResponsiveActive)
-                        }
-                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-zinc-800 font-semibold bg-white cursor-pointer transition-all"
+                        onChange={(e) => handlePropChange(control.name, e.target.value, isResponsiveActive)}
+                        className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 text-zinc-800 font-semibold bg-white"
                       >
                         {isResponsiveActive && activeBreakpointTab !== "desktop" && (
                           <option value="">Inherit From Larger Screen</option>
@@ -276,28 +319,20 @@ export const RightInspector: React.FC = () => {
 
                     {control.type === "color" && (
                       <div className="flex items-center gap-2">
-                        <div className="relative h-7 w-7 rounded-md border border-zinc-200 overflow-hidden cursor-pointer shrink-0 shadow-sm hover:border-zinc-300 bg-white">
+                        <div className="relative h-7 w-7 rounded border border-zinc-200 overflow-hidden cursor-pointer shrink-0 shadow-sm bg-white">
                           <input
                             type="color"
-                            value={value.startsWith("var") ? "#ffffff" : value} // fallback for tokens
-                            onChange={(e) =>
-                              handlePropChange(control.name, e.target.value, isResponsiveActive)
-                            }
+                            value={value.startsWith("var") ? "#ffffff" : value}
+                            onChange={(e) => handlePropChange(control.name, e.target.value, isResponsiveActive)}
                             className="absolute -inset-1 h-9 w-9 border-0 cursor-pointer p-0 bg-none"
                           />
                         </div>
                         <input
                           type="text"
                           value={value}
-                          placeholder={
-                            isResponsiveActive && activeBreakpointTab !== "desktop"
-                              ? "Inherit..."
-                              : "Color HEX or Token..."
-                          }
-                          onChange={(e) =>
-                            handlePropChange(control.name, e.target.value, isResponsiveActive)
-                          }
-                          className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-zinc-800 font-mono text-center uppercase"
+                          placeholder={isResponsiveActive && activeBreakpointTab !== "desktop" ? "Inherit..." : "HEX/Token"}
+                          onChange={(e) => handlePropChange(control.name, e.target.value, isResponsiveActive)}
+                          className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-blue-500 text-zinc-850 font-mono text-center uppercase"
                         />
                       </div>
                     )}
@@ -306,27 +341,268 @@ export const RightInspector: React.FC = () => {
               })}
             </div>
 
-            {/* Deletion & Clear */}
-            <div className="pt-4 border-t border-zinc-200 mt-2 flex flex-col gap-2.5 shrink-0">
+            {/* Deletion & Deselection */}
+            <div className="pt-4 border-t border-zinc-200 mt-2 flex flex-col gap-2.5">
               <button
-                onClick={handleDelete}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-200 hover:border-red-300 bg-red-50/20 hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-semibold cursor-pointer transition-all duration-150 shadow-sm"
+                onClick={handleComponentDelete}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-200 hover:border-red-300 bg-red-50/20 hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-semibold cursor-pointer transition-all shadow-sm"
               >
                 <Trash2 className="h-3.5 w-3.5" />
                 <span>Delete Component</span>
               </button>
 
               <button
-                onClick={() => selectElement(null)}
-                className="w-full py-2 px-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer transition-all duration-150 text-center"
+                onClick={() => selectElement(null, null)}
+                className="w-full py-2 px-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer transition-all text-center"
               >
-                Clear Selection
+                Deselect Component
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : selectedSection ? (
+        /* ==================== 2. SECTION SETTINGS INSPECTOR ==================== */
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <div className="p-4 border-b border-zinc-200 bg-zinc-50 shrink-0 flex items-center justify-between">
+            <h2 className="text-xs font-bold text-zinc-500 tracking-wider uppercase flex items-center gap-2">
+              <Columns className="h-3.5 w-3.5 text-zinc-400" />
+              <span>Section Settings</span>
+            </h2>
+            <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+              Container
+            </span>
+          </div>
+
+          <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-5">
+            {/* Header Identity */}
+            <div>
+              <h3 className="text-sm font-bold text-zinc-800 leading-tight">
+                {selectedSection.name} Spacing
+              </h3>
+              <p className="text-[10px] text-zinc-400 font-mono mt-0.5 select-all">
+                ID: {selectedSection.id}
+              </p>
+            </div>
+
+            {/* Breakpoint Selector */}
+            <div className="bg-zinc-100 p-0.5 rounded-lg border border-zinc-200 flex">
+              <button
+                onClick={() => setActiveBreakpointTab("desktop")}
+                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded text-[10px] font-bold transition-all ${
+                  activeBreakpointTab === "desktop"
+                    ? "bg-white text-zinc-800 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-600"
+                }`}
+              >
+                <Monitor className="h-3 w-3" />
+                <span>Desk</span>
+              </button>
+              <button
+                onClick={() => setActiveBreakpointTab("tablet")}
+                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded text-[10px] font-bold transition-all ${
+                  activeBreakpointTab === "tablet"
+                    ? "bg-white text-zinc-800 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-600"
+                }`}
+              >
+                <Tablet className="h-3 w-3" />
+                <span>Tab</span>
+              </button>
+              <button
+                onClick={() => setActiveBreakpointTab("mobile")}
+                className={`flex-1 flex items-center justify-center gap-1 py-1 rounded text-[10px] font-bold transition-all ${
+                  activeBreakpointTab === "mobile"
+                    ? "bg-white text-zinc-800 shadow-sm"
+                    : "text-zinc-400 hover:text-zinc-600"
+                }`}
+              >
+                <Smartphone className="h-3 w-3" />
+                <span>Mob</span>
+              </button>
+            </div>
+
+            {/* Section Controls List */}
+            <div className="flex flex-col gap-4">
+              {/* Background Color */}
+              <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                  Background Color
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="relative h-7 w-7 rounded border border-zinc-200 overflow-hidden cursor-pointer bg-white shrink-0 shadow-sm">
+                    <input
+                      type="color"
+                      value={
+                        (selectedSection.settings.backgroundColor ?? "var(--theme-bg)").startsWith("var")
+                          ? "#ffffff"
+                          : selectedSection.settings.backgroundColor
+                      }
+                      onChange={(e) => handleSectionSettingChange("backgroundColor", e.target.value)}
+                      className="absolute -inset-1 h-9 w-9 border-0 cursor-pointer p-0 bg-none"
+                    />
+                  </div>
+                  <input
+                    type="text"
+                    value={selectedSection.settings.backgroundColor ?? "var(--theme-bg)"}
+                    onChange={(e) => handleSectionSettingChange("backgroundColor", e.target.value)}
+                    className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-800 font-mono text-center uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Responsive Padding Top */}
+              {(() => {
+                const val = selectedSection.settings.paddingTop ?? "var(--theme-section-spacing)";
+                let activeVal = val;
+                let isInherited = false;
+                if (typeof val === "object" && val !== null) {
+                  activeVal = val[activeBreakpointTab] ?? "";
+                  isInherited = activeBreakpointTab !== "desktop" && activeVal === "";
+                }
+                return (
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                        Padding Top
+                      </label>
+                      {isInherited && (
+                        <span className="text-[9px] text-zinc-400 font-medium italic">Inherited</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={activeVal}
+                      placeholder={isInherited ? "Inherit..." : ""}
+                      onChange={(e) => handleSectionSettingChange("paddingTop", e.target.value, true)}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-800 font-medium bg-white"
+                    />
+                  </div>
+                );
+              })()}
+
+              {/* Responsive Padding Bottom */}
+              {(() => {
+                const val = selectedSection.settings.paddingBottom ?? "var(--theme-section-spacing)";
+                let activeVal = val;
+                let isInherited = false;
+                if (typeof val === "object" && val !== null) {
+                  activeVal = val[activeBreakpointTab] ?? "";
+                  isInherited = activeBreakpointTab !== "desktop" && activeVal === "";
+                }
+                return (
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                        Padding Bottom
+                      </label>
+                      {isInherited && (
+                        <span className="text-[9px] text-zinc-400 font-medium italic">Inherited</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={activeVal}
+                      placeholder={isInherited ? "Inherit..." : ""}
+                      onChange={(e) => handleSectionSettingChange("paddingBottom", e.target.value, true)}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-800 font-medium bg-white"
+                    />
+                  </div>
+                );
+              })()}
+
+              {/* Container Width */}
+              <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                  Container Width
+                </label>
+                <select
+                  value={selectedSection.settings.containerWidth ?? "max-w-5xl"}
+                  onChange={(e) => handleSectionSettingChange("containerWidth", e.target.value)}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 bg-white text-zinc-800 font-semibold"
+                >
+                  <option value="max-w-3xl">Narrow (3xl)</option>
+                  <option value="max-w-5xl">Medium (5xl)</option>
+                  <option value="max-w-7xl">Wide (7xl)</option>
+                  <option value="w-full">Full Width (w-full)</option>
+                </select>
+              </div>
+
+              {/* Flex Direction */}
+              <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                  Direction Flow
+                </label>
+                <select
+                  value={selectedSection.settings.flexDirection ?? "col"}
+                  onChange={(e) => handleSectionSettingChange("flexDirection", e.target.value)}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 bg-white text-zinc-800 font-semibold"
+                >
+                  <option value="col">Vertical Stack (Column)</option>
+                  <option value="row">Horizontal Side-by-Side (Row)</option>
+                </select>
+              </div>
+
+              {/* Gap Spacing */}
+              {(() => {
+                const val = selectedSection.settings.gap ?? "24px";
+                let activeVal = val;
+                let isInherited = false;
+                if (typeof val === "object" && val !== null) {
+                  activeVal = val[activeBreakpointTab] ?? "";
+                  isInherited = activeBreakpointTab !== "desktop" && activeVal === "";
+                }
+                return (
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                        Gaps & spacing
+                      </label>
+                      {isInherited && (
+                        <span className="text-[9px] text-zinc-400 font-medium italic">Inherited</span>
+                      )}
+                    </div>
+                    <input
+                      type="text"
+                      value={activeVal}
+                      placeholder={isInherited ? "Inherit..." : ""}
+                      onChange={(e) => handleSectionSettingChange("gap", e.target.value, true)}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-800 font-medium bg-white"
+                    />
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Actions: Duplicate & Delete */}
+            <div className="pt-4 border-t border-zinc-200 mt-2 flex flex-col gap-2.5">
+              <button
+                onClick={handleSectionDuplicate}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-indigo-700 text-xs font-bold cursor-pointer transition-all shadow-sm"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>Duplicate Section</span>
+              </button>
+
+              <button
+                onClick={handleSectionDelete}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-lg border border-red-250 hover:border-red-350 bg-red-50/20 hover:bg-red-50 text-red-600 hover:text-red-700 text-xs font-semibold cursor-pointer transition-all shadow-sm"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+                <span>Delete Section</span>
+              </button>
+
+              <button
+                onClick={() => selectSection(null)}
+                className="w-full py-2 px-3 rounded-lg border border-zinc-200 hover:bg-zinc-50 text-zinc-600 text-xs font-semibold cursor-pointer transition-all text-center"
+              >
+                Deselect Section
               </button>
             </div>
           </div>
         </div>
       ) : (
-        /* ==================== GLOBAL THEME EDITOR ==================== */
+        /* ==================== 3. GLOBAL THEME EDITOR ==================== */
         <div className="flex flex-col h-full">
           {/* Header */}
           <div className="p-4 border-b border-zinc-200 bg-zinc-50 shrink-0 flex items-center justify-between">
@@ -340,7 +616,7 @@ export const RightInspector: React.FC = () => {
           </div>
 
           <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-5">
-            {/* Active Theme Picker */}
+            {/* Theme Picker */}
             <div className="flex flex-col gap-1.5">
               <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
                 Select Active Theme
@@ -348,7 +624,7 @@ export const RightInspector: React.FC = () => {
               <select
                 value={activeTheme.id}
                 onChange={(e) => applyTheme(e.target.value)}
-                className="w-full text-xs px-2.5 py-2 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 text-zinc-800 font-bold bg-white cursor-pointer shadow-sm"
+                className="w-full text-xs px-2.5 py-2 rounded-md border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-850 font-bold bg-white cursor-pointer shadow-sm"
               >
                 <optgroup label="Built-in System Themes">
                   {builtInThemes.map((t) => (
@@ -392,7 +668,7 @@ export const RightInspector: React.FC = () => {
                         {color.label}
                       </span>
                       <div className="flex items-center gap-2">
-                        <div className="relative h-6 w-6 rounded border border-zinc-200 overflow-hidden cursor-pointer shrink-0 shadow-sm hover:border-zinc-300">
+                        <div className="relative h-6 w-6 rounded border border-zinc-200 overflow-hidden cursor-pointer shrink-0 shadow-sm bg-white">
                           <input
                             type="color"
                             value={val}
@@ -408,7 +684,7 @@ export const RightInspector: React.FC = () => {
                           onChange={(e) =>
                             updateThemeProperty("colors", color.name, e.target.value)
                           }
-                          className="w-full text-[11px] px-2 py-1 rounded border border-zinc-200 focus:outline-none focus:border-indigo-500 text-zinc-700 font-mono text-center uppercase"
+                          className="w-full text-[11px] px-2 py-1 rounded border border-zinc-200 focus:outline-none text-zinc-700 font-mono text-center uppercase"
                         />
                       </div>
                     </div>
@@ -466,7 +742,7 @@ export const RightInspector: React.FC = () => {
               </div>
             </div>
 
-            {/* Spacing & Borders Section */}
+            {/* Spacing & Shapes Section */}
             <div className="flex flex-col gap-3.5 border-t border-zinc-100 pt-4">
               <h4 className="text-xs font-bold text-zinc-700 flex items-center gap-1.5">
                 <Maximize className="h-3.5 w-3.5 text-zinc-400" />
@@ -501,10 +777,10 @@ export const RightInspector: React.FC = () => {
               </div>
             </div>
 
-            {/* Save as New Theme Form */}
+            {/* Save Theme Copy Form */}
             <form
               onSubmit={handleSaveTheme}
-              className="mt-2 p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50 flex flex-col gap-2.5 shrink-0"
+              className="mt-2 p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/50 flex flex-col gap-2.5"
             >
               <h5 className="text-[11px] font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1">
                 <Save className="h-3 w-3" />
@@ -520,11 +796,11 @@ export const RightInspector: React.FC = () => {
                   placeholder="E.g., Elizabeth Editorial"
                   value={customThemeName}
                   onChange={(e) => setCustomThemeName(e.target.value)}
-                  className="w-full text-xs px-2.5 py-1.5 rounded border border-indigo-200 focus:outline-none focus:border-indigo-500 bg-white"
+                  className="w-full text-xs px-2.5 py-1.5 rounded border border-indigo-200 bg-white text-zinc-800"
                 />
                 <button
                   type="submit"
-                  className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-1"
+                  className="w-full py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded shadow-sm transition-all cursor-pointer flex items-center justify-center gap-1"
                 >
                   {saveSuccess ? (
                     <>

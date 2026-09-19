@@ -118,10 +118,10 @@ export const TopToolbar: React.FC<TopToolbarProps> = ({ onNewProjectClick }) => 
         <button
           onClick={() => {
             alert(
-              "Page JSON Export:\n\n" +
-                JSON.stringify(state.pageData, null, 2)
+              "Project JSON Export:\n\n" +
+                JSON.stringify(state.project, null, 2)
             );
-            console.log(state.pageData);
+            console.log(state.project);
           }}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-850 text-white text-xs font-semibold cursor-pointer shadow transition-all duration-150"
         >

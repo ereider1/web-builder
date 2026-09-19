@@ -8,12 +8,12 @@ import {
   useSensors,
   PointerSensor,
 } from "@dnd-kit/core";
-import { useBuilder, cloneElementsWithNewIds } from "@/store/BuilderContext";
+import { useBuilder, cloneElementsWithNewIds, cloneSectionWithNewIds } from "@/store/BuilderContext";
 import { componentRegistry } from "@/registry/ComponentRegistry";
 import { sectionLibrary } from "@/registry/SectionLibrary";
 import { templateLibrary } from "@/registry/TemplateLibrary";
 import { builtInThemes } from "@/theme/ThemeManager";
-import { ElementType, PageElement, PageData } from "@/types";
+import { ElementType, PageElement, PageSection, Project, Page } from "@/types";
 import { TopToolbar } from "./TopToolbar";
 import { LeftSidebar } from "./LeftSidebar";
 import { Canvas } from "./Canvas";
@@ -21,21 +21,17 @@ import { RightInspector } from "./RightInspector";
 import { StatusBar } from "./StatusBar";
 import { LayoutGrid, ArrowRight, Sparkles, FolderPlus, X } from "lucide-react";
 
-// Helper recursively finding parent of a child element
-function findParentSection(
-  elements: PageElement[],
-  childId: string
-): PageElement | null {
-  for (const el of elements) {
-    if (el.children?.some((child) => child.id === childId)) {
-      return el;
-    }
-  }
-  return null;
-}
-
 export const BuilderLayout: React.FC = () => {
-  const { state, addElement, moveElement, loadStarter } = useBuilder();
+  const {
+    state,
+    addSection,
+    moveSection,
+    addElementToSection,
+    deleteElement,
+    moveElementInSection,
+    loadStarter,
+  } = useBuilder();
+
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
 
   // Pointer sensor to allow selection clicks without initiating accidental drags
@@ -47,6 +43,9 @@ export const BuilderLayout: React.FC = () => {
     })
   );
 
+  const activePage =
+    state.project.pages.find((p) => p.id === state.activePageId) || state.project.pages[0];
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over) return;
@@ -57,26 +56,24 @@ export const BuilderLayout: React.FC = () => {
     const isPalette = active.data.current?.isPaletteItem;
     const activeType = active.data.current?.type as ElementType;
 
-    // Handle dropping a pre-made Section Blueprint from the Library
     const isSectionLibrary = active.data.current?.isSectionLibraryItem;
     const sectionLibraryId = active.data.current?.sectionId;
 
+    // 1. Handle dragging a Section Blueprint from the Library sidebar
     if (isSectionLibrary && sectionLibraryId) {
       const blueprint = sectionLibrary.find((s) => s.id === sectionLibraryId);
-      if (blueprint && blueprint.elements.length > 0) {
-        const clonedElements = cloneElementsWithNewIds(blueprint.elements);
-        // Sections are always top-level
-        // Find if dropped over a specific section and get its index
-        const targetIndex = state.pageData.elements.findIndex(
-          (el) => el.id === overId
-        );
-        addElement(null, clonedElements[0], targetIndex >= 0 ? targetIndex : -1);
+      if (blueprint) {
+        const cloned = cloneSectionWithNewIds(blueprint as unknown as PageSection);
+        
+        // Find if dropped over an existing section, get index
+        const targetIndex = activePage.sections.findIndex((s) => s.id === overId);
+        addSection(cloned, targetIndex >= 0 ? targetIndex : -1);
       }
       return;
     }
 
+    // 2. Handle dragging a Component palette node from the sidebar
     if (isPalette) {
-      // 1. Create the new element
       const newId = `${activeType}-${Math.random().toString(36).substr(2, 9)}`;
       const registryEntry = componentRegistry[activeType];
 
@@ -84,98 +81,119 @@ export const BuilderLayout: React.FC = () => {
         id: newId,
         type: activeType,
         props: { ...registryEntry.defaultProps },
-        ...(activeType === "section" ? { children: [] } : {}),
       };
 
-      // 2. Determine target placement
-      if (activeType === "section") {
-        const targetIndex = state.pageData.elements.findIndex(
-          (el) => el.id === overId
-        );
-        addElement(null, newElement, targetIndex >= 0 ? targetIndex : -1);
-      } else {
-        const isOverSection = state.pageData.elements.some(
-          (el) => el.id === overId && el.type === "section"
-        );
+      // Find where we dropped the component
+      const targetSectionId = over.data.current?.sectionId as string | undefined;
+      const isOverSectionDrop = over.data.current?.isSectionDrop as boolean | undefined;
 
-        if (isOverSection) {
-          addElement(overId, newElement);
-        } else {
-          const parentSection = findParentSection(
-            state.pageData.elements,
-            overId
-          );
-
-          if (parentSection) {
-            const siblingIndex =
-              parentSection.children?.findIndex((c) => childIdAndMatch(c.id, overId)) ?? -1;
-            addElement(parentSection.id, newElement, siblingIndex);
+      if (targetSectionId) {
+        // Dropped inside or over elements of a specific section
+        const section = activePage.sections.find((s) => s.id === targetSectionId);
+        if (section) {
+          if (isOverSectionDrop) {
+            // Append to the section elements list
+            addElementToSection(targetSectionId, newElement);
           } else {
-            const firstSection = state.pageData.elements.find(
-              (el) => el.type === "section"
-            );
-            if (firstSection) {
-              addElement(firstSection.id, newElement);
-            } else {
-              addElement(null, newElement);
-            }
+            // Dropped over a specific sibling element in that section, find sibling index
+            const siblingIndex = section.elements.findIndex((el) => el.id === overId);
+            addElementToSection(targetSectionId, newElement, siblingIndex);
+          }
+        }
+      } else {
+        // Fallback: If dropped on root empty canvas, find the first section and append
+        if (activePage.sections.length > 0) {
+          addElementToSection(activePage.sections[0].id, newElement);
+        }
+      }
+      return;
+    }
+
+    // 3. Handle sorting existing items on the Canvas
+    if (activeId === overId) return;
+
+    const isSectionDrag = active.data.current?.isSection as boolean | undefined;
+    const isComponentDrag = active.data.current?.isComponent as boolean | undefined;
+
+    if (isSectionDrag) {
+      // Reordering top-level sections
+      const targetIndex = activePage.sections.findIndex((s) => s.id === overId);
+      if (targetIndex >= 0) {
+        moveSection(activeId, targetIndex);
+      }
+    } else if (isComponentDrag) {
+      // Reordering components inside sections
+      const activeSectionId = active.data.current?.sectionId as string;
+      const overSectionId = over.data.current?.sectionId as string | undefined;
+
+      if (!activeSectionId || !overSectionId) return;
+
+      if (activeSectionId === overSectionId) {
+        // Same section reordering
+        const section = activePage.sections.find((s) => s.id === activeSectionId);
+        if (section) {
+          const targetIndex = section.elements.findIndex((el) => el.id === overId);
+          if (targetIndex >= 0) {
+            moveElementInSection(activeSectionId, activeId, targetIndex);
+          }
+        }
+      } else {
+        // Drag sorting across DIFFERENT sections
+        const activeSection = activePage.sections.find((s) => s.id === activeSectionId);
+        const overSection = activePage.sections.find((s) => s.id === overSectionId);
+
+        if (activeSection && overSection) {
+          const elementToMove = activeSection.elements.find((el) => el.id === activeId);
+          if (elementToMove) {
+            // Target insertion index
+            const targetIndex = overSection.elements.findIndex((el) => el.id === overId);
+            
+            // Delete from old parent, insert into new parent
+            deleteElement(activeId, activeSectionId);
+            addElementToSection(overSectionId, elementToMove, targetIndex >= 0 ? targetIndex : -1);
           }
         }
       }
-    } else {
-      // Reordering existing elements on the canvas
-      if (activeId === overId) return;
-
-      const activeParent = findParentSection(state.pageData.elements, activeId);
-      const overParent = findParentSection(state.pageData.elements, overId);
-
-      if (!activeParent && !overParent) {
-        const targetIndex = state.pageData.elements.findIndex(
-          (el) => el.id === overId
-        );
-        moveElement(activeId, null, targetIndex);
-      } else {
-        const targetParentId = overParent ? overParent.id : null;
-        const siblingList = overParent
-          ? overParent.children || []
-          : state.pageData.elements;
-
-        const targetIndex = siblingList.findIndex((el) => el.id === overId);
-        moveElement(activeId, targetParentId, targetIndex);
-      }
     }
   };
-
-  const childIdAndMatch = (id: string, overId: string) => id === overId;
 
   const handleSelectTemplate = (templateId: string) => {
     const template = templateLibrary.find((t) => t.id === templateId);
     if (!template) return;
 
-    // Load default theme
+    // Load theme
     const theme =
       [...builtInThemes, ...state.customThemes].find(
         (t) => t.id === template.defaultThemeId
       ) || builtInThemes[0];
 
-    // Deep clone and merge sections with new unique element IDs recursively
-    const assembledElements: PageElement[] = [];
-    template.sections.forEach((sec) => {
-      if (sec.elements.length > 0) {
-        const cloned = cloneElementsWithNewIds(sec.elements);
-        assembledElements.push(cloned[0]); // append the root Section container
-      }
+    // Deep clone and merge sections with recursively fresh unique element IDs
+    const assembledSections: PageSection[] = template.sections.map((sec) => {
+      return {
+        id: `section-${Math.random().toString(36).substr(2, 9)}`,
+        type: sec.id,
+        name: sec.name,
+        settings: JSON.parse(JSON.stringify(sec.settings)),
+        elements: cloneElementsWithNewIds(sec.elements),
+      };
     });
 
-    const newPageData: PageData = {
-      id: `page-${Date.now()}`,
-      name: `${template.name} Page`,
-      themeId: theme.id,
-      elements: assembledElements,
+    const newProject: Project = {
+      id: `project-${Date.now()}`,
+      name: `${template.name} Site`,
+      activeThemeId: theme.id,
+      pages: [
+        {
+          id: `page-1`,
+          name: "Home",
+          slug: "home",
+          sections: assembledSections,
+        },
+      ],
     };
 
-    // Load assembled starter elements into global store
-    loadStarter(newPageData, theme);
+    // Load starter project into store
+    loadStarter(newProject, theme);
     setIsNewProjectModalOpen(false);
   };
 
@@ -212,9 +230,9 @@ export const BuilderLayout: React.FC = () => {
                   <FolderPlus className="h-4 w-4" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-bold text-zinc-850">Create New Website</h2>
+                  <h2 className="text-sm font-bold text-zinc-850">Create New Website Project</h2>
                   <p className="text-[10px] text-zinc-400 font-medium">
-                    Choose a starter template or begin with a blank slate.
+                    Choose a starter layout to launch a cohesive web presence in seconds.
                   </p>
                 </div>
               </div>
@@ -263,7 +281,7 @@ export const BuilderLayout: React.FC = () => {
                     <div className="mt-5 pt-3.5 border-t border-zinc-50 flex items-center justify-between text-[10px] text-zinc-400 font-medium">
                       <span className="flex items-center gap-1">
                         <Sparkles className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400" />
-                        <span>Theme: <strong>{themeName}</strong></span>
+                        <span>Theme Default: <strong>{themeName}</strong></span>
                       </span>
                       <span className="flex items-center gap-1 text-indigo-600 font-semibold opacity-0 group-hover:opacity-100 transition-opacity">
                         <span>Select Starter</span>

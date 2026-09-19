@@ -1,29 +1,35 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useEffect } from "react";
-import { PageData, PageElement, BuilderState, PreviewMode, Theme } from "@/types";
+import {
+  Project,
+  Page,
+  PageSection,
+  PageElement,
+  BuilderState,
+  PreviewMode,
+  Theme,
+} from "@/types";
 import { builtInThemes, getCustomThemes, saveCustomTheme } from "@/theme/ThemeManager";
+import { sectionLibrary } from "@/registry/SectionLibrary";
 
 type BuilderAction =
-  | {
-      type: "ADD_ELEMENT";
-      payload: { parentId: string | null; element: PageElement; index: number };
-    }
-  | { type: "UPDATE_ELEMENT"; payload: { id: string; props: Record<string, any> } }
-  | { type: "DELETE_ELEMENT"; payload: { id: string } }
-  | { type: "SELECT_ELEMENT"; payload: { id: string | null } }
-  | {
-      type: "MOVE_ELEMENT";
-      payload: { id: string; targetParentId: string | null; index: number };
-    }
+  | { type: "SELECT_SECTION"; payload: { sectionId: string | null } }
+  | { type: "SELECT_ELEMENT"; payload: { elementId: string | null; sectionId: string | null } }
+  | { type: "ADD_SECTION"; payload: { section: PageSection; index: number } }
+  | { type: "UPDATE_SECTION_SETTINGS"; payload: { sectionId: string; settings: Record<string, any> } }
+  | { type: "DELETE_SECTION"; payload: { sectionId: string } }
+  | { type: "DUPLICATE_SECTION"; payload: { sectionId: string } }
+  | { type: "MOVE_SECTION"; payload: { sectionId: string; index: number } }
+  | { type: "ADD_ELEMENT_TO_SECTION"; payload: { sectionId: string; element: PageElement; index: number } }
+  | { type: "UPDATE_ELEMENT"; payload: { elementId: string; props: Record<string, any> } }
+  | { type: "DELETE_ELEMENT"; payload: { elementId: string; sectionId: string } }
+  | { type: "MOVE_ELEMENT_IN_SECTION"; payload: { sectionId: string; elementId: string; index: number } }
   | { type: "SET_PREVIEW_MODE"; payload: { mode: PreviewMode } }
   | { type: "APPLY_THEME"; payload: { themeId: string } }
-  | {
-      type: "UPDATE_THEME_PROPERTY";
-      payload: { category: string; key: string; value: string };
-    }
+  | { type: "UPDATE_THEME_PROPERTY"; payload: { category: string; key: string; value: string } }
   | { type: "SAVE_CUSTOM_THEME"; payload: { name: string } }
-  | { type: "LOAD_STARTER"; payload: { pageData: PageData; theme: Theme } }
+  | { type: "LOAD_STARTER"; payload: { project: Project; theme: Theme } }
   | { type: "UNDO" }
   | { type: "REDO" };
 
@@ -41,8 +47,18 @@ export function cloneElementsWithNewIds(elements: PageElement[]): PageElement[] 
   });
 }
 
-// Helper: Recursively update element properties in tree
-function updateElementInTree(
+// Deep clone PageSection with fresh unique IDs
+export function cloneSectionWithNewIds(sec: PageSection): PageSection {
+  return {
+    ...sec,
+    id: `section-${Math.random().toString(36).substr(2, 9)}`,
+    settings: JSON.parse(JSON.stringify(sec.settings)),
+    elements: cloneElementsWithNewIds(sec.elements),
+  };
+}
+
+// Helper: Recursively update component properties in elements list
+function updateElementInList(
   elements: PageElement[],
   id: string,
   newProps: Record<string, any>
@@ -54,15 +70,15 @@ function updateElementInTree(
     if (el.children) {
       return {
         ...el,
-        children: updateElementInTree(el.children, id, newProps),
+        children: updateElementInList(el.children, id, newProps),
       };
     }
     return el;
   });
 }
 
-// Helper: Recursively remove element from tree
-function removeElementFromTree(
+// Helper: Recursively remove component from elements list
+function removeElementFromList(
   elements: PageElement[],
   id: string
 ): { updatedElements: PageElement[]; removedElement: PageElement | null } {
@@ -77,7 +93,7 @@ function removeElementFromTree(
       }
       if (el.children && el.children.length > 0) {
         const { updatedElements, removedElement: childRemoved } =
-          removeElementFromTree(el.children, id);
+          removeElementFromList(el.children, id);
         if (childRemoved) {
           removedElement = childRemoved;
         }
@@ -93,102 +109,190 @@ function removeElementFromTree(
   return { updatedElements, removedElement };
 }
 
-// Helper: Recursively insert element into tree
-function insertElementIntoTree(
-  elements: PageElement[],
-  parentId: string | null,
-  elementToInsert: PageElement,
-  index: number
-): PageElement[] {
-  if (parentId === null) {
-    const copy = [...elements];
-    if (index < 0 || index >= copy.length) {
-      copy.push(elementToInsert);
-    } else {
-      copy.splice(index, 0, elementToInsert);
-    }
-    return copy;
-  }
-
-  return elements.map((el) => {
-    if (el.id === parentId) {
-      const children = el.children ? [...el.children] : [];
-      if (index < 0 || index >= children.length) {
-        children.push(elementToInsert);
-      } else {
-        children.splice(index, 0, elementToInsert);
-      }
-      return { ...el, children };
-    }
-    if (el.children) {
-      return {
-        ...el,
-        children: insertElementIntoTree(
-          el.children,
-          parentId,
-          elementToInsert,
-          index
-        ),
-      };
-    }
-    return el;
-  });
-}
-
 const defaultTheme = builtInThemes[0]; // Modern is the default theme
 
-const initialPageData: PageData = {
-  id: "page-1",
-  name: "My Awesome Website",
-  themeId: "modern",
-  elements: [
+const initialProject: Project = {
+  id: "project-1",
+  name: "My Professional Project",
+  activeThemeId: "modern",
+  pages: [
     {
-      id: "section-1",
-      type: "section",
-      props: {
-        backgroundColor: "var(--theme-bg)",
-        paddingTop: { desktop: "80px", tablet: "60px", mobile: "40px" },
-        paddingBottom: { desktop: "80px", tablet: "60px", mobile: "40px" },
-        containerWidth: "max-w-5xl",
-        flexDirection: "col",
-        gap: "24px",
-      },
-      children: [
+      id: "page-1",
+      name: "Home",
+      slug: "home",
+      sections: [
         {
-          id: "heading-1",
-          type: "heading",
-          props: {
-            text: "Design Your Perfect Website Visualizer",
-            fontSize: { desktop: "48px", tablet: "38px", mobile: "32px" },
-            fontWeight: "700",
-            color: "var(--theme-primary)",
-            alignment: "center",
+          id: "sec-nav",
+          type: "simple-navbar",
+          name: "Simple Navbar",
+          settings: {
+            backgroundColor: "var(--theme-bg)",
+            paddingTop: "20px",
+            paddingBottom: "20px",
+            containerWidth: "max-w-7xl",
+            flexDirection: "row",
+            gap: "12px",
           },
+          elements: [
+            {
+              id: "nav-brand-default",
+              type: "heading",
+              props: {
+                text: "VISUAL.BUILDER",
+                fontSize: "18px",
+                fontWeight: "800",
+                color: "var(--theme-primary)",
+                alignment: "left",
+              },
+            },
+            {
+              id: "nav-links-default",
+              type: "text",
+              props: {
+                text: "Home   |   Services   |   Philosophy   |   Portfolio",
+                fontSize: "14px",
+                color: "var(--theme-foreground)",
+                alignment: "center",
+              },
+            },
+            {
+              id: "nav-cta-default",
+              type: "button",
+              props: {
+                text: "Get Started",
+                url: "#",
+                backgroundColor: "var(--theme-primary)",
+                textColor: "var(--theme-bg)",
+                paddingX: "14px",
+                paddingY: "7px",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "12px",
+                alignment: "right",
+              },
+            },
+          ],
         },
         {
-          id: "text-1",
-          type: "text",
-          props: {
-            text: "This is a clean, modular visual page editor. Drag components from the sidebar, select them to edit their properties, and watch the canvas update in real-time. Full undo, redo, and responsive support are ready to go!",
-            fontSize: { desktop: "18px", tablet: "16px", mobile: "15px" },
-            color: "var(--theme-foreground)",
-            alignment: "center",
+          id: "sec-hero",
+          type: "hero-centered",
+          name: "Hero Centered",
+          settings: {
+            backgroundColor: "var(--theme-bg)",
+            paddingTop: { desktop: "100px", tablet: "80px", mobile: "60px" },
+            paddingBottom: { desktop: "100px", tablet: "80px", mobile: "60px" },
+            containerWidth: "max-w-5xl",
+            flexDirection: "col",
+            gap: "24px",
           },
+          elements: [
+            {
+              id: "hero-centered-h1-default",
+              type: "heading",
+              props: {
+                text: "Design Beautiful Custom Websites Faster",
+                fontSize: { desktop: "54px", tablet: "42px", mobile: "36px" },
+                fontWeight: "700",
+                color: "var(--theme-primary)",
+                alignment: "center",
+              },
+            },
+            {
+              id: "hero-centered-txt-default",
+              type: "text",
+              props: {
+                text: "A local-first visual editor built for developers and designers who want to launch highly polished, themeable landings and services pages in seconds. Everything is custom, editable, and beautifully responsive.",
+                fontSize: { desktop: "18px", tablet: "16px", mobile: "15px" },
+                color: "var(--theme-foreground)",
+                alignment: "center",
+              },
+            },
+            {
+              id: "hero-centered-btn-default",
+              type: "button",
+              props: {
+                text: "Explore Our Features",
+                url: "#",
+                backgroundColor: "var(--theme-primary)",
+                textColor: "var(--theme-bg)",
+                paddingX: "28px",
+                paddingY: "14px",
+                borderRadius: "var(--radius-md)",
+                fontSize: "16px",
+                alignment: "center",
+              },
+            },
+          ],
         },
         {
-          id: "button-1",
-          type: "button",
-          props: {
-            text: "Get Started Now",
-            url: "#",
-            backgroundColor: "var(--theme-primary)",
-            textColor: "var(--theme-bg)",
-            paddingX: "24px",
-            paddingY: "12px",
-            borderRadius: "var(--radius-md)",
-            fontSize: "16px",
-            alignment: "center",
+          id: "sec-testimonials",
+          type: "testimonials",
+          name: "Testimonials",
+          settings: {
+            backgroundColor: "var(--theme-muted)",
+            paddingTop: { desktop: "70px", tablet: "55px", mobile: "40px" },
+            paddingBottom: { desktop: "70px", tablet: "55px", mobile: "40px" },
+            containerWidth: "max-w-3xl",
+            flexDirection: "col",
+            gap: "20px",
           },
+          elements: [
+            {
+              id: "testi-quote-default",
+              type: "heading",
+              props: {
+                text: "“By compiling web pages from cohesive design token frameworks, we bypass raw style overrides entirely and deliver pixel-perfect visual consistent layouts.”",
+                fontSize: { desktop: "24px", tablet: "20px", mobile: "18px" },
+                fontWeight: "600",
+                color: "var(--theme-primary)",
+                alignment: "center",
+              },
+            },
+            {
+              id: "testi-author-default",
+              type: "text",
+              props: {
+                text: "— Elizabeth Reider, Lead Visual Architect",
+                fontSize: "14px",
+                color: "var(--theme-foreground)",
+                alignment: "center",
+              },
+            },
+          ],
+        },
+        {
+          id: "sec-foot",
+          type: "simple-footer",
+          name: "Simple Footer",
+          settings: {
+            backgroundColor: "var(--theme-bg)",
+            paddingTop: "30px",
+            paddingBottom: "30px",
+            containerWidth: "max-w-5xl",
+            flexDirection: "row",
+            gap: "20px",
+          },
+          elements: [
+            {
+              id: "foot-cpy-default",
+              type: "text",
+              props: {
+                text: "© 2026 Web Builder. All rights reserved. Completely brand-neutral layout visualizer suite.",
+                fontSize: "13px",
+                color: "var(--theme-foreground)",
+                alignment: "left",
+              },
+            },
+            {
+              id: "foot-lnks-default",
+              type: "text",
+              props: {
+                text: "Privacy Policy | Terms of Service",
+                fontSize: "13px",
+                color: "var(--theme-foreground)",
+                alignment: "right",
+              },
+            },
+          ],
         },
       ],
     },
@@ -196,7 +300,9 @@ const initialPageData: PageData = {
 };
 
 const initialState: BuilderState = {
-  pageData: initialPageData,
+  project: initialProject,
+  activePageId: "page-1",
+  selectedSectionId: null,
   selectedElementId: null,
   previewMode: "desktop",
   activeTheme: defaultTheme,
@@ -211,117 +317,283 @@ function builderReducer(
   state: BuilderState,
   action: BuilderAction
 ): BuilderState {
-  // Utility helper to save history frames
+  // Utility helper to save history frames of Project + Theme
   const createHistoryFrame = () => ({
-    pageData: JSON.parse(JSON.stringify(state.pageData)),
+    project: JSON.parse(JSON.stringify(state.project)),
     activeTheme: JSON.parse(JSON.stringify(state.activeTheme)),
   });
 
+  const getActivePage = (project: Project): Page => {
+    return project.pages.find((p) => p.id === state.activePageId) || project.pages[0];
+  };
+
+  const updateActivePageInProject = (project: Project, updatedPage: Page): Project => {
+    return {
+      ...project,
+      pages: project.pages.map((p) => (p.id === updatedPage.id ? updatedPage : p)),
+    };
+  };
+
   switch (action.type) {
-    case "ADD_ELEMENT": {
-      const { parentId, element, index } = action.payload;
-
-      const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
-
-      const updatedElements = insertElementIntoTree(
-        state.pageData.elements,
-        parentId,
-        element,
-        index
-      );
-
+    case "SELECT_SECTION": {
       return {
         ...state,
-        pageData: {
-          ...state.pageData,
-          elements: updatedElements,
-        },
-        selectedElementId: element.id,
-        history: { past, future },
-      };
-    }
-
-    case "UPDATE_ELEMENT": {
-      const { id, props } = action.payload;
-
-      const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
-
-      const updatedElements = updateElementInTree(
-        state.pageData.elements,
-        id,
-        props
-      );
-
-      return {
-        ...state,
-        pageData: {
-          ...state.pageData,
-          elements: updatedElements,
-        },
-        history: { past, future },
-      };
-    }
-
-    case "DELETE_ELEMENT": {
-      const { id } = action.payload;
-
-      const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
-
-      const { updatedElements } = removeElementFromTree(
-        state.pageData.elements,
-        id
-      );
-
-      return {
-        ...state,
-        pageData: {
-          ...state.pageData,
-          elements: updatedElements,
-        },
-        selectedElementId:
-          state.selectedElementId === id ? null : state.selectedElementId,
-        history: { past, future },
+        selectedSectionId: action.payload.sectionId,
+        selectedElementId: null, // Clear element selection when section selected
       };
     }
 
     case "SELECT_ELEMENT": {
       return {
         ...state,
-        selectedElementId: action.payload.id,
+        selectedElementId: action.payload.elementId,
+        selectedSectionId: action.payload.sectionId,
       };
     }
 
-    case "MOVE_ELEMENT": {
-      const { id, targetParentId, index } = action.payload;
+    case "ADD_SECTION": {
+      const { section, index } = action.payload;
 
       const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
+      const future: { project: Project; activeTheme: Theme }[] = [];
 
-      // 1. Remove from current location
-      const { updatedElements: intermediateElements, removedElement } =
-        removeElementFromTree(state.pageData.elements, id);
+      const activePage = getActivePage(state.project);
+      const sections = [...activePage.sections];
 
-      if (!removedElement) {
-        return state;
+      if (index < 0 || index >= sections.length) {
+        sections.push(section);
+      } else {
+        sections.splice(index, 0, section);
       }
 
-      // 2. Insert at target parent and index
-      const updatedElements = insertElementIntoTree(
-        intermediateElements,
-        targetParentId,
-        removedElement,
-        index
-      );
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
 
       return {
         ...state,
-        pageData: {
-          ...state.pageData,
-          elements: updatedElements,
-        },
+        project: updatedProject,
+        selectedSectionId: section.id,
+        selectedElementId: null,
+        history: { past, future },
+      };
+    }
+
+    case "UPDATE_SECTION_SETTINGS": {
+      const { sectionId, settings } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.map((sec) => {
+        if (sec.id === sectionId) {
+          return { ...sec, settings: { ...sec.settings, ...settings } };
+        }
+        return sec;
+      });
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        history: { past, future },
+      };
+    }
+
+    case "DELETE_SECTION": {
+      const { sectionId } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.filter((sec) => sec.id !== sectionId);
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        selectedSectionId: state.selectedSectionId === sectionId ? null : state.selectedSectionId,
+        selectedElementId: null,
+        history: { past, future },
+      };
+    }
+
+    case "DUPLICATE_SECTION": {
+      const { sectionId } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const targetSec = activePage.sections.find((sec) => sec.id === sectionId);
+
+      if (!targetSec) return state;
+
+      const cloned = cloneSectionWithNewIds(targetSec);
+      const sections = [...activePage.sections];
+      const targetIndex = sections.findIndex((sec) => sec.id === sectionId);
+
+      sections.splice(targetIndex + 1, 0, cloned);
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        selectedSectionId: cloned.id,
+        selectedElementId: null,
+        history: { past, future },
+      };
+    }
+
+    case "MOVE_SECTION": {
+      const { sectionId, index } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = [...activePage.sections];
+      const targetIndex = sections.findIndex((sec) => sec.id === sectionId);
+
+      if (targetIndex < 0) return state;
+
+      const [removed] = sections.splice(targetIndex, 1);
+      
+      let nextIndex = index;
+      if (nextIndex < 0) nextIndex = 0;
+      if (nextIndex > sections.length) nextIndex = sections.length;
+
+      sections.splice(nextIndex, 0, removed);
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        history: { past, future },
+      };
+    }
+
+    case "ADD_ELEMENT_TO_SECTION": {
+      const { sectionId, element, index } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.map((sec) => {
+        if (sec.id === sectionId) {
+          const elements = [...sec.elements];
+          if (index < 0 || index >= elements.length) {
+            elements.push(element);
+          } else {
+            elements.splice(index, 0, element);
+          }
+          return { ...sec, elements };
+        }
+        return sec;
+      });
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        selectedElementId: element.id,
+        selectedSectionId: sectionId,
+        history: { past, future },
+      };
+    }
+
+    case "UPDATE_ELEMENT": {
+      const { elementId, props } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.map((sec) => {
+        const updatedElements = updateElementInList(sec.elements, elementId, props);
+        return { ...sec, elements: updatedElements };
+      });
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        history: { past, future },
+      };
+    }
+
+    case "DELETE_ELEMENT": {
+      const { elementId, sectionId } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.map((sec) => {
+        if (sec.id === sectionId) {
+          const { updatedElements } = removeElementFromList(sec.elements, elementId);
+          return { ...sec, elements: updatedElements };
+        }
+        return sec;
+      });
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
+        selectedElementId: state.selectedElementId === elementId ? null : state.selectedElementId,
+        history: { past, future },
+      };
+    }
+
+    case "MOVE_ELEMENT_IN_SECTION": {
+      const { sectionId, elementId, index } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { project: Project; activeTheme: Theme }[] = [];
+
+      const activePage = getActivePage(state.project);
+      const sections = activePage.sections.map((sec) => {
+        if (sec.id === sectionId) {
+          const elements = [...sec.elements];
+          const targetIndex = elements.findIndex((el) => el.id === elementId);
+
+          if (targetIndex >= 0) {
+            const [removed] = elements.splice(targetIndex, 1);
+            
+            let nextIndex = index;
+            if (nextIndex < 0) nextIndex = 0;
+            if (nextIndex > elements.length) nextIndex = elements.length;
+
+            elements.splice(nextIndex, 0, removed);
+          }
+          return { ...sec, elements };
+        }
+        return sec;
+      });
+
+      const updatedPage = { ...activePage, sections };
+      const updatedProject = updateActivePageInProject(state.project, updatedPage);
+
+      return {
+        ...state,
+        project: updatedProject,
         history: { past, future },
       };
     }
@@ -341,14 +613,14 @@ function builderReducer(
       if (!targetTheme) return state;
 
       const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
+      const future: { project: Project; activeTheme: Theme }[] = [];
 
       return {
         ...state,
         activeTheme: targetTheme,
-        pageData: {
-          ...state.pageData,
-          themeId: targetTheme.id,
+        project: {
+          ...state.project,
+          activeThemeId: targetTheme.id,
         },
         history: { past, future },
       };
@@ -358,7 +630,7 @@ function builderReducer(
       const { category, key, value } = action.payload;
 
       const past = [...state.history.past, createHistoryFrame()];
-      const future: { pageData: PageData; activeTheme: Theme }[] = [];
+      const future: { project: Project; activeTheme: Theme }[] = [];
 
       const updatedTheme = {
         ...state.activeTheme,
@@ -392,21 +664,22 @@ function builderReducer(
         ...state,
         customThemes: updatedCustomThemes,
         activeTheme: newTheme,
-        pageData: {
-          ...state.pageData,
-          themeId: newTheme.id,
+        project: {
+          ...state.project,
+          activeThemeId: newTheme.id,
         },
       };
     }
 
     case "LOAD_STARTER": {
-      const { pageData, theme } = action.payload;
+      const { project, theme } = action.payload;
       return {
         ...state,
-        pageData,
+        project,
         activeTheme: theme,
+        selectedSectionId: null,
         selectedElementId: null,
-        history: { past: [], future: [] }, // clear history on loading new starter
+        history: { past: [], future: [] }, // clear history on loading starter
       };
     }
 
@@ -419,7 +692,7 @@ function builderReducer(
 
       return {
         ...state,
-        pageData: previous.pageData,
+        project: previous.project,
         activeTheme: previous.activeTheme,
         history: { past, future },
       };
@@ -434,7 +707,7 @@ function builderReducer(
 
       return {
         ...state,
-        pageData: next.pageData,
+        project: next.project,
         activeTheme: next.activeTheme,
         history: { past, future },
       };
@@ -447,16 +720,22 @@ function builderReducer(
 
 interface BuilderContextType {
   state: BuilderState;
-  addElement: (parentId: string | null, element: PageElement, index?: number) => void;
-  updateElement: (id: string, props: Record<string, any>) => void;
-  deleteElement: (id: string) => void;
-  selectElement: (id: string | null) => void;
-  moveElement: (id: string, targetParentId: string | null, index: number) => void;
+  selectSection: (sectionId: string | null) => void;
+  selectElement: (elementId: string | null, sectionId: string | null) => void;
+  addSection: (section: PageSection, index?: number) => void;
+  updateSectionSettings: (sectionId: string, settings: Record<string, any>) => void;
+  deleteSection: (sectionId: string) => void;
+  duplicateSection: (sectionId: string) => void;
+  moveSection: (sectionId: string, index: number) => void;
+  addElementToSection: (sectionId: string, element: PageElement, index?: number) => void;
+  updateElement: (elementId: string, props: Record<string, any>) => void;
+  deleteElement: (elementId: string, sectionId: string) => void;
+  moveElementInSection: (sectionId: string, elementId: string, index: number) => void;
   setPreviewMode: (mode: PreviewMode) => void;
   applyTheme: (themeId: string) => void;
   updateThemeProperty: (category: string, key: string, value: string) => void;
   saveAsCustomTheme: (name: string) => void;
-  loadStarter: (pageData: PageData, theme: Theme) => void;
+  loadStarter: (project: Project, theme: Theme) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -470,32 +749,62 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [state, dispatch] = useReducer(builderReducer, initialState);
 
-  const addElement = (
-    parentId: string | null,
+  const selectSection = (sectionId: string | null) => {
+    dispatch({ type: "SELECT_SECTION", payload: { sectionId } });
+  };
+
+  const selectElement = (elementId: string | null, sectionId: string | null) => {
+    dispatch({ type: "SELECT_ELEMENT", payload: { elementId, sectionId } });
+  };
+
+  const addSection = (section: PageSection, index = -1) => {
+    dispatch({ type: "ADD_SECTION", payload: { section, index } });
+  };
+
+  const updateSectionSettings = (sectionId: string, settings: Record<string, any>) => {
+    dispatch({ type: "UPDATE_SECTION_SETTINGS", payload: { sectionId, settings } });
+  };
+
+  const deleteSection = (sectionId: string) => {
+    dispatch({ type: "DELETE_SECTION", payload: { sectionId } });
+  };
+
+  const duplicateSection = (sectionId: string) => {
+    dispatch({ type: "DUPLICATE_SECTION", payload: { sectionId } });
+  };
+
+  const moveSection = (sectionId: string, index: number) => {
+    dispatch({ type: "MOVE_SECTION", payload: { sectionId, index } });
+  };
+
+  const addElementToSection = (
+    sectionId: string,
     element: PageElement,
     index = -1
   ) => {
-    dispatch({ type: "ADD_ELEMENT", payload: { parentId, element, index } });
+    dispatch({
+      type: "ADD_ELEMENT_TO_SECTION",
+      payload: { sectionId, element, index },
+    });
   };
 
-  const updateElement = (id: string, props: Record<string, any>) => {
-    dispatch({ type: "UPDATE_ELEMENT", payload: { id, props } });
+  const updateElement = (elementId: string, props: Record<string, any>) => {
+    dispatch({ type: "UPDATE_ELEMENT", payload: { elementId, props } });
   };
 
-  const deleteElement = (id: string) => {
-    dispatch({ type: "DELETE_ELEMENT", payload: { id } });
+  const deleteElement = (elementId: string, sectionId: string) => {
+    dispatch({ type: "DELETE_ELEMENT", payload: { elementId, sectionId } });
   };
 
-  const selectElement = (id: string | null) => {
-    dispatch({ type: "SELECT_ELEMENT", payload: { id } });
-  };
-
-  const moveElement = (
-    id: string,
-    targetParentId: string | null,
+  const moveElementInSection = (
+    sectionId: string,
+    elementId: string,
     index: number
   ) => {
-    dispatch({ type: "MOVE_ELEMENT", payload: { id, targetParentId, index } });
+    dispatch({
+      type: "MOVE_ELEMENT_IN_SECTION",
+      payload: { sectionId, elementId, index },
+    });
   };
 
   const setPreviewMode = (mode: PreviewMode) => {
@@ -507,15 +816,18 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const updateThemeProperty = (category: string, key: string, value: string) => {
-    dispatch({ type: "UPDATE_THEME_PROPERTY", payload: { category, key, value } });
+    dispatch({
+      type: "UPDATE_THEME_PROPERTY",
+      payload: { category, key, value },
+    });
   };
 
   const saveAsCustomTheme = (name: string) => {
     dispatch({ type: "SAVE_CUSTOM_THEME", payload: { name } });
   };
 
-  const loadStarter = (pageData: PageData, theme: Theme) => {
-    dispatch({ type: "LOAD_STARTER", payload: { pageData, theme } });
+  const loadStarter = (project: Project, theme: Theme) => {
+    dispatch({ type: "LOAD_STARTER", payload: { project, theme } });
   };
 
   const undo = () => {
@@ -550,20 +862,17 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const loadedCustomThemes = getCustomThemes();
     if (loadedCustomThemes.length > 0) {
-      // Find what the page's current themeId points to and apply it if it's custom
-      const savedThemeId = state.pageData.themeId;
+      const savedThemeId = state.project.activeThemeId;
       const savedCustom = loadedCustomThemes.find((t) => t.id === savedThemeId);
 
-      // Dispatch load starter with current elements but merged custom themes list
       dispatch({
         type: "LOAD_STARTER",
         payload: {
-          pageData: state.pageData,
+          project: state.project,
           theme: savedCustom || state.activeTheme,
         },
       });
 
-      // Directly mutates the local State array
       state.customThemes = loadedCustomThemes;
     }
   }, []);
@@ -575,11 +884,17 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
     <BuilderContext.Provider
       value={{
         state,
-        addElement,
+        selectSection,
+        selectElement,
+        addSection,
+        updateSectionSettings,
+        deleteSection,
+        duplicateSection,
+        moveSection,
+        addElementToSection,
         updateElement,
         deleteElement,
-        selectElement,
-        moveElement,
+        moveElementInSection,
         setPreviewMode,
         applyTheme,
         updateThemeProperty,

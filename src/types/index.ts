@@ -11,14 +11,29 @@ export interface PageElement {
   id: string;
   type: ElementType;
   props: Record<string, any>;
-  children?: PageElement[];
+  children?: PageElement[]; // Nested elements within components (if any, like cards/grids)
 }
 
-export interface PageData {
+export interface PageSection {
+  id: string;
+  type: string; // The section type identifier (e.g. "hero-centered", "services-cards")
+  name: string;
+  settings: Record<string, any>; // Background color, paddings, vertical spacing, gap, etc.
+  elements: PageElement[]; // Child components inside this section
+}
+
+export interface Page {
   id: string;
   name: string;
-  themeId: string; // The active theme associated with this page
-  elements: PageElement[];
+  slug: string;
+  sections: PageSection[];
+}
+
+export interface Project {
+  id: string;
+  name: string;
+  activeThemeId: string;
+  pages: Page[];
 }
 
 export interface ControlOption {
@@ -91,9 +106,9 @@ export interface Theme {
 export interface SectionDefinition {
   id: string;
   name: string;
-  category: "HERO" | "ABOUT" | "SERVICES" | "SOCIAL" | "CONVERSION" | "INFORMATION" | "FOOTER";
-  thumbnail?: string; // Optional SVG thumbnail markup or description
-  elements: PageElement[];
+  category: "HERO" | "ABOUT" | "SERVICES" | "SOCIAL" | "CONTENT" | "CONVERSION" | "NAVIGATION" | "FOOTER";
+  settings: Record<string, any>; // vertical spacing, padding, backgroundColor, etc.
+  elements: PageElement[]; // Child components inside the section
 }
 
 export interface StarterTemplate {
@@ -108,13 +123,15 @@ export interface StarterTemplate {
 export type PreviewMode = "desktop" | "tablet" | "mobile";
 
 export interface BuilderState {
-  pageData: PageData;
+  project: Project;
+  activePageId: string; // Active Page ID (Home is default)
+  selectedSectionId: string | null;
   selectedElementId: string | null;
   previewMode: PreviewMode;
   activeTheme: Theme;
   customThemes: Theme[];
   history: {
-    past: { pageData: PageData; activeTheme: Theme }[];
-    future: { pageData: PageData; activeTheme: Theme }[];
+    past: { project: Project; activeTheme: Theme }[];
+    future: { project: Project; activeTheme: Theme }[];
   };
 }

@@ -10,17 +10,19 @@ import { Trash2, GripVertical } from "lucide-react";
 
 interface CanvasElementWrapperProps {
   element: PageElement;
+  sectionId: string;
   children?: React.ReactNode;
 }
 
 export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
   element,
+  sectionId,
   children,
 }) => {
   const { state, selectElement, deleteElement } = useBuilder();
   const isSelected = state.selectedElementId === element.id;
 
-  // Set up sortable for elements on the canvas
+  // Set up sortable for components inside section elements list
   const {
     attributes,
     listeners,
@@ -31,9 +33,9 @@ export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
   } = useSortable({
     id: element.id,
     data: {
-      id: element.id,
-      type: element.type,
-      isPaletteItem: false,
+      elementId: element.id,
+      sectionId: sectionId,
+      isComponent: true,
     },
   });
 
@@ -44,13 +46,13 @@ export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
   };
 
   const handleSelect = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent bubble-up selecting multiple layers
-    selectElement(element.id);
+    e.stopPropagation(); // Stop bubble so we don't accidentally select the section background!
+    selectElement(element.id, sectionId);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteElement(element.id);
+    deleteElement(element.id, sectionId);
   };
 
   const registryEntry = componentRegistry[element.type];
@@ -60,20 +62,16 @@ export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
       ref={setNodeRef}
       style={style}
       onClick={handleSelect}
-      className={`group relative transition-all duration-150 rounded-lg ${
+      className={`group/item relative transition-all duration-150 rounded-lg ${
         isSelected
           ? "ring-2 ring-blue-500 ring-offset-2 shadow-sm"
           : "hover:ring-1 hover:ring-zinc-300 hover:ring-offset-1"
-      } ${
-        element.type === "section"
-          ? "my-1"
-          : "p-2.5 bg-white/50 border border-zinc-100 rounded-md"
-      }`}
+      } p-2.5 bg-white/50 border border-zinc-100 rounded-md`}
     >
-      {/* Element Title/Delete Overlay */}
+      {/* Component Title/Delete Overlay */}
       <div
         className={`absolute -top-3.5 left-2 z-50 flex items-center gap-1 bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm opacity-0 transition-opacity duration-150 ${
-          isSelected ? "opacity-100" : "group-hover:opacity-75"
+          isSelected ? "opacity-100 animate-fade-in" : "group-hover/item:opacity-75"
         }`}
       >
         {/* Grab Handle for Dragging */}
@@ -85,7 +83,7 @@ export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
         >
           <GripVertical className="h-2.5 w-2.5" />
         </div>
-        <span className="capitalize">{registryEntry.name}</span>
+        <span className="capitalize">{registryEntry?.name || element.type}</span>
         {isSelected && (
           <button
             onClick={handleDelete}
@@ -107,3 +105,4 @@ export const CanvasElementWrapper: React.FC<CanvasElementWrapperProps> = ({
     </div>
   );
 };
+export default CanvasElementWrapper;

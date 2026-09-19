@@ -2,10 +2,10 @@
 
 import React, { useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { useBuilder, cloneElementsWithNewIds } from "@/store/BuilderContext";
+import { useBuilder, cloneElementsWithNewIds, cloneSectionWithNewIds } from "@/store/BuilderContext";
 import { componentRegistry } from "@/registry/ComponentRegistry";
 import { sectionLibrary } from "@/registry/SectionLibrary";
-import { ElementType } from "@/types";
+import { ElementType, PageSection } from "@/types";
 import { Plus, HelpCircle, LayoutGrid, Layers, Columns } from "lucide-react";
 
 interface SidebarItemProps {
@@ -35,53 +35,68 @@ const SidebarDraggableItem: React.FC<SidebarItemProps> = ({
       }
     : undefined;
 
-  const { addElement, state } = useBuilder();
+  const { addSection, addElementToSection, state } = useBuilder();
 
   const handleClick = () => {
     const newId = `${type}-${Math.random().toString(36).substr(2, 9)}`;
     const registryEntry = componentRegistry[type];
 
+    if (type === "section") {
+      const newSection = {
+        id: `section-${Math.random().toString(36).substr(2, 9)}`,
+        type: "custom-section",
+        name: "Custom Section",
+        settings: {
+          backgroundColor: "var(--theme-bg)",
+          paddingTop: { desktop: "60px", tablet: "50px", mobile: "40px" },
+          paddingBottom: { desktop: "60px", tablet: "50px", mobile: "40px" },
+          containerWidth: "max-w-5xl",
+          flexDirection: "col",
+          gap: "16px",
+        },
+        elements: [],
+      };
+      addSection(newSection);
+      return;
+    }
+
     const newElement = {
       id: newId,
       type,
       props: { ...registryEntry.defaultProps },
-      ...(type === "section" ? { children: [] } : {}),
     };
 
-    if (type === "section") {
-      addElement(null, newElement);
-      return;
-    }
+    const activePage =
+      state.project.pages.find((p) => p.id === state.activePageId) || state.project.pages[0];
 
-    const selectedId = state.selectedElementId;
-    let targetParentId: string | null = null;
+    let targetSectionId = state.selectedSectionId;
 
-    if (selectedId) {
-      const isSelectedSection = state.pageData.elements.some(
-        (el) => el.id === selectedId && el.type === "section"
-      );
-      if (isSelectedSection) {
-        targetParentId = selectedId;
-      } else {
-        const parentSection = state.pageData.elements.find((el) =>
-          el.children?.some((child) => child.id === selectedId)
-        );
-        if (parentSection) {
-          targetParentId = parentSection.id;
-        }
+    if (!targetSectionId) {
+      if (activePage.sections.length > 0) {
+        targetSectionId = activePage.sections[0].id;
       }
     }
 
-    if (!targetParentId) {
-      const firstSection = state.pageData.elements.find(
-        (el) => el.type === "section"
-      );
-      if (firstSection) {
-        targetParentId = firstSection.id;
-      }
+    if (targetSectionId) {
+      addElementToSection(targetSectionId, newElement);
+    } else {
+      // Create section automatically if none exists on the canvas
+      const autoSection = {
+        id: `section-${Math.random().toString(36).substr(2, 9)}`,
+        type: "custom-section",
+        name: "Auto Container",
+        settings: {
+          backgroundColor: "var(--theme-bg)",
+          paddingTop: { desktop: "60px", tablet: "50px", mobile: "40px" },
+          paddingBottom: { desktop: "60px", tablet: "50px", mobile: "40px" },
+          containerWidth: "max-w-5xl",
+          flexDirection: "col",
+          gap: "16px",
+        },
+        elements: [newElement],
+      };
+      addSection(autoSection);
     }
-
-    addElement(targetParentId, newElement);
   };
 
   return (
@@ -144,15 +159,13 @@ const SectionLibraryDraggableItem: React.FC<SectionDraggableItemProps> = ({
       }
     : undefined;
 
-  const { addElement } = useBuilder();
+  const { addSection } = useBuilder();
 
   const handleInsertSection = () => {
-    const sectionBlueprint = sectionLibrary.find((s) => s.id === id);
-    if (sectionBlueprint && sectionBlueprint.elements.length > 0) {
-      // Clones with recursively fresh IDs
-      const clonedElements = cloneElementsWithNewIds(sectionBlueprint.elements);
-      // Append section to top-level list
-      addElement(null, clonedElements[0]);
+    const blueprint = sectionLibrary.find((s) => s.id === id);
+    if (blueprint) {
+      const cloned = cloneSectionWithNewIds(blueprint as unknown as PageSection);
+      addSection(cloned);
     }
   };
 
