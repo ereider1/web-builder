@@ -54,18 +54,22 @@ export const sectionLibrary: SectionDefinition[] = [
     ],
   },
 
-  // ==================== 2. HERO (Sophisticated Two-Column Layout) ====================
+  // ==================== 2. HERO (High-Fidelity Full-Bleed & Clean Background Layout) ====================
   {
     id: "prof-hero",
-    name: "Hero — Corporate Split",
+    name: "Hero — Corporate Premium Banner",
     category: "HERO",
     settings: {
+      useBackgroundImage: true,
+      backgroundImage: "{{assets.hero}}",
+      overlayOpacity: "0.5",
+      alignment: "center",
       backgroundColor: "var(--theme-bg)",
-      paddingTop: { desktop: "100px", tablet: "80px", mobile: "50px" },
-      paddingBottom: { desktop: "100px", tablet: "80px", mobile: "50px" },
-      containerWidth: "max-w-7xl",
-      flexDirection: "row",
-      gap: "48px",
+      paddingTop: { desktop: "140px", tablet: "110px", mobile: "80px" },
+      paddingBottom: { desktop: "140px", tablet: "110px", mobile: "80px" },
+      containerWidth: "max-w-5xl",
+      flexDirection: "col",
+      gap: "24px",
     },
     elements: [
       {
@@ -73,10 +77,10 @@ export const sectionLibrary: SectionDefinition[] = [
         type: "text",
         props: {
           text: "INDEPENDENT CONSULTING",
-          fontSize: "12px",
+          fontSize: "13px",
           fontWeight: "800",
           color: "var(--theme-primary)",
-          alignment: "left",
+          alignment: "center",
         },
       },
       {
@@ -87,7 +91,7 @@ export const sectionLibrary: SectionDefinition[] = [
           fontSize: "16px",
           fontWeight: "800",
           color: "var(--theme-foreground)",
-          alignment: "left",
+          alignment: "center",
         },
       },
       {
@@ -95,10 +99,10 @@ export const sectionLibrary: SectionDefinition[] = [
         type: "heading",
         props: {
           text: "Strategy for businesses ready to grow.",
-          fontSize: { desktop: "44px", tablet: "36px", mobile: "30px" },
+          fontSize: { desktop: "54px", tablet: "42px", mobile: "34px" },
           fontWeight: "800",
           color: "var(--theme-primary)",
-          alignment: "left",
+          alignment: "center",
         },
       },
       {
@@ -106,9 +110,9 @@ export const sectionLibrary: SectionDefinition[] = [
         type: "text",
         props: {
           text: "Northstar Consulting helps growing companies simplify operations, sharpen brand strategy, and build visual systems that scale.",
-          fontSize: "15px",
+          fontSize: "18px",
           color: "var(--theme-foreground)",
-          alignment: "left",
+          alignment: "center",
         },
       },
       {
@@ -119,22 +123,10 @@ export const sectionLibrary: SectionDefinition[] = [
           url: "mailto:partner@northstar.co",
           backgroundColor: "var(--theme-primary)",
           textColor: "var(--theme-bg)",
-          paddingX: "24px",
-          paddingY: "12px",
+          paddingX: "26px",
+          paddingY: "13px",
           borderRadius: "var(--radius-sm)",
-          fontSize: "14px",
-          alignment: "left",
-        },
-      },
-      {
-        id: "prof-hero-image",
-        type: "image",
-        props: {
-          src: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
-          alt: "Corporate visual representation",
-          width: "100%",
-          height: "380px",
-          borderRadius: "var(--radius-lg)",
+          fontSize: "15px",
           alignment: "center",
         },
       },

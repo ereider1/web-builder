@@ -12,6 +12,7 @@ import { useBuilder } from "@/store/BuilderContext";
 import { componentRegistry } from "@/registry/ComponentRegistry";
 import { PageSection, PageElement } from "@/types";
 import { CanvasElementWrapper } from "./CanvasElementWrapper";
+import { replaceTokensInValue } from "@/utils/contentBinder";
 import {
   ArrowUp,
   ArrowDown,
@@ -19,7 +20,7 @@ import {
   Trash2,
   Box,
   GripVertical,
-  Layers,
+  Columns,
 } from "lucide-react";
 
 // ==================== INDIVIDUAL FIRST-CLASS SECTION WRAPPER ====================
@@ -97,6 +98,12 @@ const CanvasSectionWrapper: React.FC<CanvasSectionWrapperProps> = ({
   };
 
   // Section styling settings (background, padding, gaps, margins)
+  const useBgImage = section.settings.useBackgroundImage ?? false;
+  const rawBgImage = section.settings.backgroundImage ?? "";
+  const resolvedBgImage = replaceTokensInValue(rawBgImage, state.project.businessInfo || { name: "" }, state.project.assets || {});
+  const overlayOpacity = parseFloat(section.settings.overlayOpacity ?? "0.5");
+  const alignment = section.settings.alignment ?? "left";
+
   const backgroundColor = section.settings.backgroundColor ?? "var(--theme-bg)";
   const paddingTop = section.settings.paddingTop ?? "var(--theme-section-spacing)";
   const paddingBottom = section.settings.paddingBottom ?? "var(--theme-section-spacing)";
@@ -114,6 +121,24 @@ const CanvasSectionWrapper: React.FC<CanvasSectionWrapperProps> = ({
       : "w-full";
 
   const flexClass = flexDirection === "row" ? "flex flex-row" : "flex flex-col";
+  const alignmentClass = alignment === "center" ? "text-center items-center" : "text-left items-start";
+
+  // Dynamic style assignment for container background
+  const sectionContainerStyle: React.CSSProperties = useBgImage
+    ? {
+        backgroundImage: resolvedBgImage ? `url(${resolvedBgImage})` : "none",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        position: "relative",
+        paddingTop,
+        paddingBottom,
+      }
+    : {
+        backgroundColor,
+        paddingTop,
+        paddingBottom,
+      };
 
   // Droppable hook for adding components to this specific section
   const { setNodeRef: setDropRef, isOver } = useDroppable({
@@ -135,7 +160,9 @@ const CanvasSectionWrapper: React.FC<CanvasSectionWrapperProps> = ({
           : isAnyChildSelected
           ? "border-zinc-200"
           : "border-transparent hover:border-indigo-300"
-      } ${isOver ? "bg-indigo-50/10 border-dashed border-indigo-500" : ""}`}
+      } ${isOver ? "bg-indigo-50/10 border-dashed border-indigo-500" : ""} ${
+        useBgImage ? "has-bg-image" : ""
+      }`}
     >
       {/* Section Hover Overlay Controls */}
       <div
@@ -196,19 +223,23 @@ const CanvasSectionWrapper: React.FC<CanvasSectionWrapperProps> = ({
         </button>
       </div>
 
+      {/* Dark Absolute Overlay Layer (if background image is active) */}
+      {useBgImage && (
+        <div
+          className="absolute inset-0 bg-black pointer-events-none z-0 transition-opacity duration-200"
+          style={{ opacity: overlayOpacity }}
+        />
+      )}
+
       {/* Actual Render Container */}
       <div
         ref={setDropRef}
-        style={{
-          backgroundColor,
-          paddingTop,
-          paddingBottom,
-        }}
-        className="w-full"
+        style={sectionContainerStyle}
+        className="w-full transition-all duration-200"
       >
         <div
           style={{ gap }}
-          className={`mx-auto px-6 w-full ${widthClass} ${flexClass} min-h-[90px] relative`}
+          className={`mx-auto px-6 w-full ${widthClass} ${flexClass} ${alignmentClass} min-h-[90px] relative z-10`}
         >
           {section.elements && section.elements.length > 0 ? (
             <SortableContext
@@ -254,7 +285,6 @@ export const Canvas: React.FC = () => {
   });
 
   const handleCanvasClick = (e: React.MouseEvent) => {
-    // Clear selections when clicking canvas background
     selectSection(null);
     selectElement(null, null);
   };
@@ -302,6 +332,12 @@ export const Canvas: React.FC = () => {
           --radius-md: ${activeTheme.radius.md};
           --radius-lg: ${activeTheme.radius.lg};
           --theme-section-spacing: ${activeTheme.spacing.section};
+        }
+        
+        /* Overrides to ensure text contrast over full-bleed background images */
+        #canvas-root .has-bg-image {
+          --theme-primary: #ffffff !important;
+          --theme-foreground: #f1f5f9 !important;
         }
       `}</style>
 

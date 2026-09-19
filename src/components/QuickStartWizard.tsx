@@ -72,6 +72,34 @@ export const QuickStartWizard: React.FC<QuickStartWizardProps> = ({
     }));
   };
 
+  const handleFillDemoData = () => {
+    setBusinessInfo({
+      name: "Aventine Advisory Group",
+      tagline: "Strategic operational systems for ambitious brands",
+      description: "We help growing companies clarify brand positioning, simplify complicated developer pipelines, and engineer highly consistent, responsive modular visual styles.",
+      phone: "+1 (555) 019-2834",
+      email: "partner@aventine.co",
+      website: "www.aventine.co",
+      address: "100 Pine Street",
+      city: "San Francisco",
+      country: "United States",
+      instagram: "https://instagram.com/aventine",
+      facebook: "https://facebook.com/aventine",
+      linkedin: "https://linkedin.com/company/aventine",
+      youtube: "",
+    });
+
+    setAssets({
+      logo: "", // fallback wordmark is beautiful
+      hero: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=1200&auto=format&fit=crop&q=80",
+      additionalImages: [
+        "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800",
+        "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
+        "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800",
+      ],
+    });
+  };
+
   const handleImageUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     assetKey: "logo" | "hero" | "additional"
@@ -371,11 +399,22 @@ export const QuickStartWizard: React.FC<QuickStartWizardProps> = ({
         {/* ==================== STEP 3: BUSINESS PROFILE FORM ==================== */}
         {step === 3 && (
           <div className="flex flex-col gap-4 animate-fade-in">
-            <div className="border-b border-zinc-50 pb-2.5">
-              <h3 className="text-sm font-black text-zinc-800">Tell us about your business</h3>
-              <p className="text-[11px] text-zinc-400 font-medium">
-                Provide client credentials. Optional fields can be skipped and will use visually appropriate defaults.
-              </p>
+            <div className="border-b border-zinc-50 pb-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-black text-zinc-800">Tell us about your business</h3>
+                <p className="text-[11px] text-zinc-400 font-medium mt-0.5">
+                  Provide client credentials. Optional fields can be skipped and will use visually appropriate defaults.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleFillDemoData}
+                className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all cursor-pointer shadow-xs border border-indigo-100/50 shrink-0 self-start sm:self-auto animate-pulse"
+                title="Populate wizard form with rich placeholder texts and images instantly"
+              >
+                <Sparkles className="h-3.5 w-3.5 fill-indigo-500/10" />
+                <span>Fill with Placeholder Content</span>
+              </button>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

@@ -18,6 +18,8 @@ import {
   Check,
   Columns,
   Sparkles,
+  Upload,
+  X,
 } from "lucide-react";
 
 // Helper to find a component inside the page's sections
@@ -572,6 +574,106 @@ export const RightInspector: React.FC = () => {
                   </div>
                 );
               })()}
+
+              {/* Section Background Style Toggle */}
+              <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                  Background Style
+                </label>
+                <select
+                  value={selectedSection.settings.useBackgroundImage ? "image" : "color"}
+                  onChange={(e) => handleSectionSettingChange("useBackgroundImage", e.target.value === "image")}
+                  className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 bg-white text-zinc-850 font-bold"
+                >
+                  <option value="color">Solid Background Color</option>
+                  <option value="image">Full Bleed Background Image</option>
+                </select>
+              </div>
+
+              {/* If Background Image is active, show image and overlay configurations */}
+              {selectedSection.settings.useBackgroundImage && (
+                <>
+                  {/* Background Image Upload */}
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                      Background Image File
+                    </label>
+                    {selectedSection.settings.backgroundImage ? (
+                      <div className="relative h-16 rounded border border-zinc-200 overflow-hidden bg-zinc-50 group/img mb-1.5 flex items-center justify-center p-1.5">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={selectedSection.settings.backgroundImage.startsWith("var") || !selectedSection.settings.backgroundImage ? "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400" : selectedSection.settings.backgroundImage}
+                          alt="Section background"
+                          className="max-h-full max-w-full object-contain"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleSectionSettingChange("backgroundImage", "")}
+                          className="absolute top-1 right-1 p-0.5 bg-red-600 text-white rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          <X className="h-2.5 w-2.5" />
+                        </button>
+                      </div>
+                    ) : null}
+                    <label className="py-1.5 px-3 rounded border border-dashed border-zinc-300 hover:border-indigo-500 flex items-center justify-center gap-1.5 cursor-pointer transition-colors bg-zinc-50/50 text-xs text-zinc-500 font-bold">
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Upload Background Photo</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const files = e.target.files;
+                          if (files && files.length > 0) {
+                            const reader = new FileReader();
+                            reader.onloadend = () => {
+                              handleSectionSettingChange("backgroundImage", reader.result as string);
+                            };
+                            reader.readAsDataURL(files[0]);
+                          }
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+
+                  {/* Overlay Darkness Opacity */}
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                      Overlay Darkness (Opacity)
+                    </label>
+                    <select
+                      value={selectedSection.settings.overlayOpacity ?? "0.5"}
+                      onChange={(e) => handleSectionSettingChange("overlayOpacity", e.target.value)}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 bg-white text-zinc-800 font-semibold"
+                    >
+                      <option value="0.1">10% Darkness</option>
+                      <option value="0.2">20% Darkness</option>
+                      <option value="0.3">30% Darkness</option>
+                      <option value="0.4">40% Darkness</option>
+                      <option value="0.5">50% Darkness</option>
+                      <option value="0.6">60% Darkness</option>
+                      <option value="0.7">70% Darkness</option>
+                      <option value="0.8">80% Darkness</option>
+                      <option value="0.9">90% Darkness</option>
+                    </select>
+                  </div>
+
+                  {/* Content Alignment */}
+                  <div className="flex flex-col gap-1.5 border-b border-zinc-50 pb-3">
+                    <label className="text-[11px] font-bold text-zinc-500 tracking-wide uppercase">
+                      Content Alignment
+                    </label>
+                    <select
+                      value={selectedSection.settings.alignment ?? "left"}
+                      onChange={(e) => handleSectionSettingChange("alignment", e.target.value)}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-md border border-zinc-200 bg-white text-zinc-800 font-semibold"
+                    >
+                      <option value="left">Left Aligned Text</option>
+                      <option value="center">Centered Content Stack</option>
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Actions: Duplicate & Delete */}
