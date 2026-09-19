@@ -97,6 +97,17 @@ export const sectionLibrary: SectionDefinition[] = [
             },
           },
           {
+            id: "prof-hero-title",
+            type: "heading",
+            props: {
+              text: "NORTHSTAR CONSULTING",
+              fontSize: "16px",
+              fontWeight: "800",
+              color: "var(--theme-foreground)",
+              alignment: "left",
+            },
+          },
+          {
             id: "prof-hero-headline",
             type: "heading",
             props: {
@@ -111,7 +122,7 @@ export const sectionLibrary: SectionDefinition[] = [
             id: "prof-hero-desc",
             type: "text",
             props: {
-              text: "We help growing companies clarify their strategy, strengthen their digital presence, and build systems that scale.",
+              text: "We help growing companies simplify operations, sharpen brand strategy, and build systems that scale.",
               fontSize: "15px",
               color: "var(--theme-foreground)",
               alignment: "left",
@@ -503,7 +514,7 @@ export const sectionLibrary: SectionDefinition[] = [
             id: "prof-about-text",
             type: "text",
             props: {
-              text: "We collaborate with clients to design digital experiences that are useful, memorable, and built to last. Our work bypasses raw spacing overrides in favor of pure theme tokens cohesion.",
+              text: "We combine strategic thinking, thoughtful design, and modern technology to create digital experiences that are useful, memorable, and built to last.",
               fontSize: "15px",
               color: "var(--theme-foreground)",
               alignment: "left",
@@ -930,7 +941,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "prof-foot-cpy",
         type: "text",
         props: {
-          text: "© 2026 Northstar. All rights reserved. Professional Services Layout Visualizer. Address: 100 Pine Street, San Francisco, CA, United States",
+          text: "© 2026 Northstar. All rights reserved. Address: 100 Pine Street, San Francisco, CA, United States",
           fontSize: "13px",
           color: "var(--theme-foreground)",
           alignment: "left",

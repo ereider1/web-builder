@@ -67,152 +67,125 @@ export function replaceTokensInValue(
 }
 
 /**
- * Traverses and binds element props recursively. Handles deeply nested columns, grids and cards.
+ * Traverses recursively through PageElements, performing explicit semantic content-slot replacements.
+ * Under this approach, the Template OWNS 100% of the design, spacing, typography, aspect ratios,
+ * and responsive columns. The user data ONLY replaces demo content.
  */
 export function bindElementRecursively(
   el: PageElement,
   secType: string,
-  profile: any,
-  images: any,
-  fullAddress: string
+  profile: {
+    name: string;
+    tagline: string;
+    description: string;
+    phone: string;
+    email: string;
+    address: string;
+    city: string;
+    country: string;
+    fullAddress: string;
+    hasTagline: boolean;
+    hasDescription: boolean;
+    hasPhone: boolean;
+    hasEmail: boolean;
+    hasAddress: boolean;
+  },
+  images: {
+    logo: string;
+    hero: string;
+    about: string;
+    caseStudy: string;
+    hasHero: boolean;
+    hasAbout: boolean;
+    hasCaseStudy: boolean;
+  }
 ): PageElement {
   const props = { ...el.props };
 
   // 1. NAVBAR SECTION
-  if (secType === "simple-navbar" || secType === "prof-navbar") {
-    if (el.id.includes("brand")) {
-      props.text = profile.name;
+  if (secType === "prof-navbar") {
+    if (el.id === "prof-nav-brand") {
+      props.text = profile.name; // Small typographical logo fallback
     }
-    if (el.id.includes("cta")) {
+    if (el.id === "prof-nav-cta") {
       props.text = "Let's Talk";
-      props.url = `mailto:${profile.email}`;
+      if (profile.hasEmail) {
+        props.url = `mailto:${profile.email}`;
+      }
     }
   }
 
-  // 2. HERO SECTION
+  // 2. HERO SECTION (Two-column split)
   if (secType === "prof-hero") {
-    if (el.id.includes("eyebrow")) {
-      props.text = "INDEPENDENT CONSULTING";
-    }
-    if (el.id.includes("title")) {
+    // Brand Identifier Header
+    if (el.id === "prof-hero-title") {
       props.text = profile.name;
     }
-    if (el.id.includes("headline")) {
+    // Tagline maps strictly to Hero Headline
+    if (el.id === "prof-hero-headline" && profile.hasTagline) {
       props.text = profile.tagline;
     }
-    if (el.id.includes("desc")) {
+    // Description maps strictly to Hero Description
+    if (el.id === "prof-hero-desc" && profile.hasDescription) {
       props.text = `${profile.name} ${profile.description}`;
     }
-    if (el.id.includes("btn-primary")) {
-      props.text = "Let's Talk";
+    // Button actions
+    if (el.id === "prof-hero-btn-primary" && profile.hasEmail) {
       props.url = `mailto:${profile.email}`;
     }
-    if (el.id.includes("btn-secondary")) {
-      props.text = "Explore Our Work";
-    }
-    if (el.id.includes("image")) {
+    // Hero image role
+    if (el.id === "prof-hero-image" && images.hasHero) {
       props.src = images.hero;
     }
   }
 
-  // 3. SERVICES SECTION
-  if (secType === "prof-services") {
-    if (el.id.includes("card1-title")) {
-      props.text = "STRATEGY";
-    }
-    if (el.id.includes("card1-desc")) {
-      props.text = "Clarify your direction and build a roadmap for meaningful growth.";
-    }
-    if (el.id.includes("card2-title")) {
-      props.text = "DIGITAL EXPERIENCES";
-    }
-    if (el.id.includes("card2-desc")) {
-      props.text = "Create thoughtful websites and digital products that turn attention into action.";
-    }
-    if (el.id.includes("card3-title")) {
-      props.text = "CREATIVE DIRECTION";
-    }
-    if (el.id.includes("card3-desc")) {
-      props.text = "Bring your brand, content, and customer experience together into one coherent identity.";
-    }
-  }
-
-  // 4. ABOUT SECTION
+  // 3. ABOUT SECTION (Two-column narrative)
   if (secType === "prof-about") {
-    if (el.id.includes("img")) {
+    // About image role
+    if (el.id === "prof-about-img" && images.hasAbout) {
       props.src = images.about;
     }
-    if (el.id.includes("eyebrow")) {
-      props.text = "A DIFFERENT WAY TO BUILD";
-    }
-    if (el.id.includes("heading")) {
-      props.text = "We combine strategic thinking, thoughtful design, and modern technology.";
-    }
-    if (el.id.includes("text")) {
-      props.text = `${profile.name} is a specialized advisory studio. We combine strategic thinking, thoughtful design, and modern technology to create digital experiences that are useful, memorable, and built to last.`;
-    }
-    if (el.id.includes("btn")) {
-      props.text = "Our Philosophy";
-      props.url = `mailto:${profile.email}`;
-    }
+    // Heading, text, and buttons remain template defaults (unmodified)
   }
 
-  // 5. CASE STUDY SECTION
+  // 4. CASE STUDY SECTION
   if (secType === "prof-case-study") {
-    if (el.id.includes("img")) {
+    // Case study image role
+    if (el.id === "prof-case-study-img" && images.hasCaseStudy) {
       props.src = images.caseStudy;
     }
-    if (el.id.includes("eyebrow")) {
-      props.text = "FEATURED PROJECT";
-    }
-    if (el.id.includes("title")) {
-      props.text = "Redesigning Global Brand Experiences";
-    }
-    if (el.id.includes("desc")) {
-      props.text = "We collaborated closely with the teams to engineer a fully responsive, type-safe design tokens platform from scratch, reducing design debt by over 70% and increasing delivery speeds.";
-    }
-    if (el.id.includes("btn")) {
-      props.text = "View Project";
+    // Heading, description, and buttons remain template defaults (unmodified)
+  }
+
+  // 5. CTA SECTION
+  if (secType === "prof-cta") {
+    if (el.id === "prof-cta-b" && profile.hasEmail) {
       props.url = `mailto:${profile.email}`;
     }
   }
 
-  // 6. TESTIMONIAL SECTION
-  if (secType === "testimonials" || secType === "prof-testimonials") {
-    if (el.id.includes("quote")) {
-      props.text = `“${profile.name} helped us turn a complicated business challenge into a clear, actionable plan.”`;
+  // 6. FOOTER SECTION
+  if (secType === "prof-footer") {
+    if (el.id === "prof-foot-cpy") {
+      const bAddressText = profile.hasAddress
+        ? profile.fullAddress
+        : "100 Pine Street, San Francisco, CA, United States";
+
+      props.text = `© 2026 ${profile.name}. All rights reserved. Address: ${bAddressText}`;
     }
-    if (el.id.includes("author")) {
-      props.text = `— Lead Product Designer, Apex Systems`;
+    if (el.id === "prof-foot-lnks") {
+      const bPhoneText = profile.hasPhone ? profile.phone : "+1 (555) 019-2834";
+      const bEmailText = profile.hasEmail ? profile.email : "partner@northstar.co";
+
+      props.text = `Tel: ${bPhoneText}  |  Email: ${bEmailText}`;
     }
   }
 
-  // 7. CTA BANNER SECTION
-  if (secType === "cta" || secType === "prof-cta") {
-    if (el.id.includes("h")) {
-      props.text = "Let's build something better.";
-    }
-    if (el.id.includes("t")) {
-      props.text = "Tell us what you're working on and let's figure out where to go next.";
-    }
-    if (el.id.includes("b")) {
-      props.text = "Let's Talk";
-      props.url = `mailto:${profile.email}`;
-    }
-  }
-
-  // 8. FOOTER SECTION
-  if (secType === "simple-footer" || secType === "prof-footer") {
-    if (el.id.includes("cpy")) {
-      props.text = `© 2026 ${profile.name}. All rights reserved. Address: ${fullAddress}`;
-    }
-    if (el.id.includes("lnks")) {
-      props.text = `Tel: ${profile.phone}  |  Email: ${profile.email}`;
-    }
-  }
-
+  // Recursively process nested child components (e.g. elements inside sub-columns grids/cards)
   const boundChildren = el.children
-    ? el.children.map((child) => bindElementRecursively(child, secType, profile, images, fullAddress))
+    ? el.children.map((child) =>
+        bindElementRecursively(child, secType, profile, images)
+      )
     : undefined;
 
   return {
@@ -224,7 +197,7 @@ export function bindElementRecursively(
 
 /**
  * Maps Business Profile and Brand Assets into the structured Content Slots of the
- * high-fidelity 'Professional Services' Template. The Template OWN the layout, 
+ * high-fidelity 'Professional Services' Template. The Template OWNS the layout,
  * typography, aspect ratios, responsive columns, and CTA placements; user data
  * ONLY replaces demo content.
  */
@@ -233,33 +206,51 @@ export function bindProfessionalServices(
   businessInfo: BusinessInfo,
   assets: BrandAssets
 ): PageSection[] {
-  // Pre-determined high-quality professional demo defaults
+  // Extract inputs and check availability explicitly
   const profile = {
     name: businessInfo.name?.trim() || "Northstar Consulting",
-    tagline: businessInfo.tagline?.trim() || "Strategy for businesses ready to grow.",
-    description: businessInfo.description?.trim() || "helps growing companies simplify operations, sharpen brand strategy, and build visual systems that scale.",
-    phone: businessInfo.phone?.trim() || "+1 (555) 019-2834",
-    email: businessInfo.email?.trim() || "partner@northstar.co",
-    address: businessInfo.address?.trim() || "100 Pine Street",
-    city: businessInfo.city?.trim() || "San Francisco",
-    country: businessInfo.country?.trim() || "United States",
+    tagline: businessInfo.tagline?.trim() || "",
+    description: businessInfo.description?.trim() || "",
+    phone: businessInfo.phone?.trim() || "",
+    email: businessInfo.email?.trim() || "",
+    address: businessInfo.address?.trim() || "",
+    city: businessInfo.city?.trim() || "",
+    country: businessInfo.country?.trim() || "",
+    fullAddress: [
+      businessInfo.address?.trim(),
+      businessInfo.city?.trim(),
+      businessInfo.country?.trim()
+    ]
+      .filter(Boolean)
+      .join(", "),
+    hasTagline: !!businessInfo.tagline?.trim(),
+    hasDescription: !!businessInfo.description?.trim(),
+    hasPhone: !!businessInfo.phone?.trim(),
+    hasEmail: !!businessInfo.email?.trim(),
+    hasAddress: !!businessInfo.address?.trim(),
   };
 
   const images = {
-    logo: assets.logo || "", // transparent fallback rendered conditionally
-    hero: assets.hero || "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1200&auto=format&fit=crop&q=80",
-    about: assets.additionalImages?.[0] || "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800",
-    caseStudy: assets.additionalImages?.[1] || "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800",
+    logo: assets.logo || "",
+    hero: assets.hero || "",
+    about: assets.additionalImages?.[0] || "",
+    caseStudy: assets.additionalImages?.[1] || "",
+    hasHero: !!assets.hero,
+    hasAbout: !!assets.additionalImages?.[0],
+    hasCaseStudy: !!assets.additionalImages?.[1],
   };
-
-  const fullAddress = [profile.address, profile.city, profile.country].filter(Boolean).join(", ");
 
   return sections.map((sec) => {
     const settings = { ...sec.settings };
-    
+
+    // Update section container properties
+    if (sec.type === "prof-hero" && images.hasHero) {
+      settings.backgroundImage = images.hero;
+    }
+
     // Process top-level elements of the section and their child nodes recursively!
     const elements = sec.elements.map((el) => {
-      return bindElementRecursively(el, sec.type, profile, images, fullAddress);
+      return bindElementRecursively(el, sec.type, profile, images);
     });
 
     return {
@@ -309,7 +300,7 @@ export function bindSection(
 }
 
 /**
- * Individual element level property token replacements.
+ * Individual element level property token replacements (for basic elements outside templates).
  */
 export function bindElementProps(
   element: PageElement,
@@ -320,9 +311,20 @@ export function bindElementProps(
     ? element.children.map((el) => bindElementProps(el, businessInfo, assets))
     : undefined;
 
+  // Simple string fallback mappings for broad manual additions
+  const bName = businessInfo.name || "Northstar Consulting";
+  const bTagline = businessInfo.tagline || "Strategy for businesses ready to grow.";
+
+  const props = { ...element.props };
+  if (typeof props.text === "string") {
+    props.text = props.text
+      .replace(/\{\{business\.name\}\}/g, bName)
+      .replace(/\{\{business\.tagline\}\}/g, bTagline);
+  }
+
   return {
     ...element,
-    props: replaceTokensInValue(element.props, businessInfo, assets),
+    props,
     ...(clonedChildren ? { children: clonedChildren } : {}),
   };
 }
