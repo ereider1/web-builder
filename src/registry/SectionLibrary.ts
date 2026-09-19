@@ -18,7 +18,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-centered-h1",
         type: "heading",
         props: {
-          text: "Design Beautiful Custom Websites Faster",
+          text: "{{business.name}}",
           fontSize: { desktop: "54px", tablet: "42px", mobile: "36px" },
           fontWeight: "700",
           color: "var(--theme-primary)",
@@ -29,7 +29,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-centered-txt",
         type: "text",
         props: {
-          text: "A local-first visual editor built for developers and designers who want to launch highly polished, themeable landings and services pages in seconds. Everything is custom, editable, and beautifully responsive.",
+          text: "{{business.tagline}}",
           fontSize: { desktop: "18px", tablet: "16px", mobile: "15px" },
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -39,8 +39,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-centered-btn",
         type: "button",
         props: {
-          text: "Explore Our Features",
-          url: "#",
+          text: "Contact Us Today",
+          url: "mailto:{{business.email}}",
           backgroundColor: "var(--theme-primary)",
           textColor: "var(--theme-bg)",
           paddingX: "28px",
@@ -67,9 +67,9 @@ export const sectionLibrary: SectionDefinition[] = [
     elements: [
       {
         id: "hero-split-left-col",
-        type: "heading", // Wait, split can hold Heading, Paragraph, and Button side-by-side or we can represent them as elements.
+        type: "heading",
         props: {
-          text: "Refined Aesthetics Meet Modern Code",
+          text: "{{business.name}}",
           fontSize: { desktop: "44px", tablet: "36px", mobile: "32px" },
           fontWeight: "700",
           color: "var(--theme-primary)",
@@ -80,7 +80,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-split-text",
         type: "text",
         props: {
-          text: "Craft cohesive online presences using built-in design tokens, customized responsive properties, and hand-tailored templates.",
+          text: "{{business.tagline}} — {{business.description}}",
           fontSize: "16px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -90,8 +90,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-split-button",
         type: "button",
         props: {
-          text: "Get Started Free",
-          url: "#",
+          text: "Call Us: {{business.phone}}",
+          url: "tel:{{business.phone}}",
           backgroundColor: "var(--theme-primary)",
           textColor: "var(--theme-bg)",
           paddingX: "22px",
@@ -105,8 +105,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-split-image",
         type: "image",
         props: {
-          src: "https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=800&auto=format&fit=crop&q=80",
-          alt: "Modern workspace visualization",
+          src: "{{assets.hero}}",
+          alt: "Hero showcase photo",
           width: "100%",
           height: "350px",
           borderRadius: "var(--radius-lg)",
@@ -132,7 +132,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-img-right-title",
         type: "heading",
         props: {
-          text: "The Next Generation Website Visualizer",
+          text: "{{business.name}}",
           fontSize: { desktop: "44px", tablet: "36px", mobile: "32px" },
           fontWeight: "700",
           color: "var(--theme-primary)",
@@ -143,7 +143,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-img-right-text",
         type: "text",
         props: {
-          text: "A structured, section-first development environment engineered to let you launch responsive landings and custom blogs instantly.",
+          text: "{{business.tagline}}",
           fontSize: "16px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -153,8 +153,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-img-right-btn",
         type: "button",
         props: {
-          text: "Browse Sections",
-          url: "#",
+          text: "Send Message",
+          url: "mailto:{{business.email}}",
           backgroundColor: "var(--theme-primary)",
           textColor: "var(--theme-bg)",
           paddingX: "22px",
@@ -168,8 +168,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "hero-img-right-media",
         type: "image",
         props: {
-          src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop&q=80",
-          alt: "Data visualization interface",
+          src: "{{assets.hero}}",
+          alt: "Visual showcase media",
           width: "100%",
           height: "320px",
           borderRadius: "var(--radius-md)",
@@ -195,8 +195,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "about-split-img",
         type: "image",
         props: {
-          src: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&auto=format&fit=crop&q=80",
-          alt: "Our team sharing concepts",
+          src: "{{assets.image_0}}",
+          alt: "Our creative space",
           width: "100%",
           height: "320px",
           borderRadius: "var(--radius-md)",
@@ -207,7 +207,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "about-split-heading",
         type: "heading",
         props: {
-          text: "Our Philosophy & Story",
+          text: "About {{business.name}}",
           fontSize: { desktop: "32px", tablet: "28px", mobile: "24px" },
           fontWeight: "700",
           color: "var(--theme-foreground)",
@@ -218,7 +218,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "about-split-text",
         type: "text",
         props: {
-          text: "We believe that visual design should not be separate from programmatic structures. By compiling pages from pure theme-token definitions, we ensure absolute consistency, lightning-fast rendering speeds, and highly maintainable systems.",
+          text: "{{business.description}}",
           fontSize: "15px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -243,7 +243,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "about-center-title",
         type: "heading",
         props: {
-          text: "Crafted with Extreme Modularity",
+          text: "About Our Philosophy",
           fontSize: "30px",
           fontWeight: "700",
           color: "var(--theme-primary)",
@@ -254,7 +254,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "about-center-p",
         type: "text",
         props: {
-          text: "Our building system is optimized for personal and developer workflows. By leveraging design tokens, we bypass raw style injection and deliver elegant web spaces that adhere strictly to pre-configured theme constraints.",
+          text: "At {{business.name}}, {{business.description}} We are dedicated to delivering standard services designed to scale effectively across all responsive devices.",
           fontSize: "16px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -279,7 +279,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-3-h",
         type: "heading",
         props: {
-          text: "Professional Core Services",
+          text: "Professional Core Offerings",
           fontSize: { desktop: "36px", tablet: "30px", mobile: "26px" },
           fontWeight: "700",
           color: "var(--theme-primary)",
@@ -290,7 +290,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-3-t",
         type: "text",
         props: {
-          text: "Custom high fidelity solutions designed to take business interfaces to the next level of visual refinement.",
+          text: "Designed & delivered by the team at {{business.name}} to serve your exact requirements.",
           fontSize: "16px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -311,7 +311,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-3-txt1",
         type: "text",
         props: {
-          text: "Visual assets, tailored typography palettes, colors mappings, and cohesive design tokens frameworks.",
+          text: "Tailored color palettes, custom typography families, curves radius systems, and consistent token grids.",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -321,7 +321,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-3-card2",
         type: "heading",
         props: {
-          text: "React/NextJS Engineering",
+          text: "Next.js Engineering",
           fontSize: "20px",
           fontWeight: "600",
           color: "var(--theme-foreground)",
@@ -332,7 +332,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-3-txt2",
         type: "text",
         props: {
-          text: "High-performance websites complete with rigid type safety, server rendering, and clean structures.",
+          text: "High performance rendering complete with strict type safety, modular structures, and absolute responsiveness.",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -368,7 +368,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-4-card1",
         type: "heading",
         props: {
-          text: "1. Brand Strategy",
+          text: "1. Consultation",
           fontSize: "18px",
           fontWeight: "600",
           color: "var(--theme-foreground)",
@@ -379,7 +379,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-4-card2",
         type: "heading",
         props: {
-          text: "2. Visual Layouts",
+          text: "2. Token Mapping",
           fontSize: "18px",
           fontWeight: "600",
           color: "var(--theme-foreground)",
@@ -390,7 +390,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "serv-4-card3",
         type: "heading",
         props: {
-          text: "3. Copywriting",
+          text: "3. Layout Strategy",
           fontSize: "18px",
           fontWeight: "600",
           color: "var(--theme-foreground)",
@@ -427,7 +427,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "testi-quote",
         type: "heading",
         props: {
-          text: "“By compiling web pages from cohesive design token frameworks, we bypass raw style overrides entirely and deliver pixel-perfect visual consistent layouts.”",
+          text: "“By compiling web pages from cohesive design token frameworks, {{business.name}} bypasses raw style overrides entirely and delivers visual consistency layouts.”",
           fontSize: { desktop: "24px", tablet: "20px", mobile: "18px" },
           fontWeight: "600",
           color: "var(--theme-primary)",
@@ -463,7 +463,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "logo-lbl",
         type: "text",
         props: {
-          text: "Trusted by standard teams globally:",
+          text: "Trusted standard partners:",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -532,7 +532,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "feat-right",
         type: "text",
         props: {
-          text: "Launch landing layouts, resume websites, portfolios, and custom restaurant portals with zero clutter. Experience complete visual design control without writing CSS rules from scratch.",
+          text: "At {{business.name}}, we help clients experience complete visual design control without writing CSS rules from scratch. Experience complete site visualizer power.",
           fontSize: "16px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -568,7 +568,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "stat-1-lbl",
         type: "text",
         props: {
-          text: "Sites Launched",
+          text: "Projects Delivered",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -589,7 +589,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "stat-2-lbl",
         type: "text",
         props: {
-          text: "Satisfied Customers",
+          text: "Happy Clients",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -614,7 +614,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "cta-h",
         type: "heading",
         props: {
-          text: "Ready to Supercharge Your Web Presences?",
+          text: "Ready to Start Your Journey With Us?",
           fontSize: { desktop: "36px", tablet: "30px", mobile: "24px" },
           fontWeight: "700",
           color: "var(--theme-bg)",
@@ -625,7 +625,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "cta-t",
         type: "text",
         props: {
-          text: "Select a starter template copy, apply a modern layout structure, customize colors token, and export cleanly.",
+          text: "Get in touch with {{business.name}} and let's craft an aesthetic layout engineered for modular success.",
           fontSize: "16px",
           color: "var(--theme-bg)",
           alignment: "center",
@@ -635,8 +635,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "cta-b",
         type: "button",
         props: {
-          text: "Create Custom Website",
-          url: "#",
+          text: "Contact Us: {{business.email}}",
+          url: "mailto:{{business.email}}",
           backgroundColor: "var(--theme-bg)",
           textColor: "var(--theme-primary)",
           paddingX: "24px",
@@ -665,7 +665,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "contact-left-title",
         type: "heading",
         props: {
-          text: "Get in Touch Today",
+          text: "Connect With {{business.name}}",
           fontSize: "32px",
           fontWeight: "700",
           color: "var(--theme-foreground)",
@@ -676,7 +676,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "contact-left-desc",
         type: "text",
         props: {
-          text: "Have an engineering inquiry? Drop me a line. Let's build something beautiful together.",
+          text: "Address: {{business.address}} \nTel: {{business.phone}} \nEmail: {{business.email}}",
           fontSize: "15px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -701,7 +701,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "nav-brand",
         type: "heading",
         props: {
-          text: "VISUAL.BUILDER",
+          text: "{{business.name}}",
           fontSize: "18px",
           fontWeight: "800",
           color: "var(--theme-primary)",
@@ -712,7 +712,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "nav-links",
         type: "text",
         props: {
-          text: "Home   |   Services   |   Philosophy   |   Portfolio",
+          text: "About   |   Services   |   Contact   |   Email: {{business.email}}",
           fontSize: "14px",
           color: "var(--theme-foreground)",
           alignment: "center",
@@ -722,8 +722,8 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "nav-cta",
         type: "button",
         props: {
-          text: "Get Started",
-          url: "#",
+          text: "Contact Us",
+          url: "mailto:{{business.email}}",
           backgroundColor: "var(--theme-primary)",
           textColor: "var(--theme-bg)",
           paddingX: "14px",
@@ -752,7 +752,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "foot-cpy",
         type: "text",
         props: {
-          text: "© 2026 Web Builder. All rights reserved. Completely brand-neutral layout visualizer suite.",
+          text: "© 2026 {{business.name}}. All rights reserved. Completely brand-neutral client visualizer suite. Location: {{business.address}}",
           fontSize: "13px",
           color: "var(--theme-foreground)",
           alignment: "left",
@@ -762,7 +762,7 @@ export const sectionLibrary: SectionDefinition[] = [
         id: "foot-lnks",
         type: "text",
         props: {
-          text: "Privacy Policy | Terms of Service",
+          text: "Privacy Policy | Terms | Email: {{business.email}}",
           fontSize: "13px",
           color: "var(--theme-foreground)",
           alignment: "right",

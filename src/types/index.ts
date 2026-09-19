@@ -29,10 +29,34 @@ export interface Page {
   sections: PageSection[];
 }
 
+export interface BusinessInfo {
+  name: string;
+  tagline?: string;
+  description?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  instagram?: string;
+  facebook?: string;
+  linkedin?: string;
+  youtube?: string;
+}
+
+export interface BrandAssets {
+  logo?: string;
+  hero?: string;
+  additionalImages?: string[];
+}
+
 export interface Project {
   id: string;
   name: string;
   activeThemeId: string;
+  businessInfo?: BusinessInfo;
+  assets?: BrandAssets;
   pages: Page[];
 }
 

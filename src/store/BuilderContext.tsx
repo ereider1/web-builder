@@ -12,6 +12,7 @@ import {
 } from "@/types";
 import { builtInThemes, getCustomThemes, saveCustomTheme } from "@/theme/ThemeManager";
 import { sectionLibrary } from "@/registry/SectionLibrary";
+import { bindSection, bindElementProps } from "@/utils/contentBinder";
 
 type BuilderAction =
   | { type: "SELECT_SECTION"; payload: { sectionId: string | null } }
@@ -357,13 +358,22 @@ function builderReducer(
       const past = [...state.history.past, createHistoryFrame()];
       const future: { project: Project; activeTheme: Theme }[] = [];
 
+      // Bind tokens on-the-fly if active project has client details
+      const boundSection = state.project.businessInfo || state.project.assets
+        ? bindSection(
+            section,
+            state.project.businessInfo || { name: "" },
+            state.project.assets || {}
+          )
+        : section;
+
       const activePage = getActivePage(state.project);
       const sections = [...activePage.sections];
 
       if (index < 0 || index >= sections.length) {
-        sections.push(section);
+        sections.push(boundSection);
       } else {
-        sections.splice(index, 0, section);
+        sections.splice(index, 0, boundSection);
       }
 
       const updatedPage = { ...activePage, sections };
@@ -372,7 +382,7 @@ function builderReducer(
       return {
         ...state,
         project: updatedProject,
-        selectedSectionId: section.id,
+        selectedSectionId: boundSection.id,
         selectedElementId: null,
         history: { past, future },
       };
@@ -488,14 +498,23 @@ function builderReducer(
       const past = [...state.history.past, createHistoryFrame()];
       const future: { project: Project; activeTheme: Theme }[] = [];
 
+      // Bind tokens on-the-fly if active project has client details
+      const boundElement = state.project.businessInfo || state.project.assets
+        ? bindElementProps(
+            element,
+            state.project.businessInfo || { name: "" },
+            state.project.assets || {}
+          )
+        : element;
+
       const activePage = getActivePage(state.project);
       const sections = activePage.sections.map((sec) => {
         if (sec.id === sectionId) {
           const elements = [...sec.elements];
           if (index < 0 || index >= elements.length) {
-            elements.push(element);
+            elements.push(boundElement);
           } else {
-            elements.splice(index, 0, element);
+            elements.splice(index, 0, boundElement);
           }
           return { ...sec, elements };
         }
@@ -508,7 +527,7 @@ function builderReducer(
       return {
         ...state,
         project: updatedProject,
-        selectedElementId: element.id,
+        selectedElementId: boundElement.id,
         selectedSectionId: sectionId,
         history: { past, future },
       };
