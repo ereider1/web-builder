@@ -1,5 +1,7 @@
 import React from "react";
 import { PageElement } from "@/types";
+import { useBuilder } from "@/store/BuilderContext";
+import { resolveResponsive } from "@/utils/responsive";
 
 interface ImageComponentProps {
   element: PageElement;
@@ -7,14 +9,21 @@ interface ImageComponentProps {
 }
 
 export const ImageComponent: React.FC<ImageComponentProps> = ({ element }) => {
-  const {
-    src = "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
-    alt = "Placeholder beach sunset image",
-    width = "100%",
-    height = "300px",
-    borderRadius = "8px",
-    alignment = "center",
-  } = element.props;
+  const { state } = useBuilder();
+  const { previewMode } = state;
+
+  const src = resolveResponsive(
+    element.props.src ?? "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=800&auto=format&fit=crop&q=60",
+    previewMode
+  );
+  const alt = resolveResponsive(element.props.alt ?? "Placeholder image", previewMode);
+  const width = resolveResponsive(element.props.width ?? "100%", previewMode);
+  const height = resolveResponsive(element.props.height ?? "350px", previewMode);
+  const borderRadius = resolveResponsive(
+    element.props.borderRadius ?? "var(--radius-md)",
+    previewMode
+  );
+  const alignment = resolveResponsive(element.props.alignment ?? "center", previewMode);
 
   const justifyClass =
     alignment === "left"
@@ -40,3 +49,4 @@ export const ImageComponent: React.FC<ImageComponentProps> = ({ element }) => {
     </div>
   );
 };
+export default ImageComponent;

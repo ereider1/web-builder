@@ -1,7 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useReducer, useEffect } from "react";
-import { PageData, PageElement, BuilderState, PreviewMode } from "@/types";
+import { PageData, PageElement, BuilderState, PreviewMode, Theme } from "@/types";
+import { builtInThemes, getCustomThemes, saveCustomTheme } from "@/theme/ThemeManager";
 
 type BuilderAction =
   | {
@@ -16,9 +17,29 @@ type BuilderAction =
       payload: { id: string; targetParentId: string | null; index: number };
     }
   | { type: "SET_PREVIEW_MODE"; payload: { mode: PreviewMode } }
+  | { type: "APPLY_THEME"; payload: { themeId: string } }
+  | {
+      type: "UPDATE_THEME_PROPERTY";
+      payload: { category: string; key: string; value: string };
+    }
+  | { type: "SAVE_CUSTOM_THEME"; payload: { name: string } }
+  | { type: "LOAD_STARTER"; payload: { pageData: PageData; theme: Theme } }
   | { type: "UNDO" }
-  | { type: "REDO" }
-  | { type: "LOAD_PAGE"; payload: { pageData: PageData } };
+  | { type: "REDO" };
+
+// Helper to recursively clone elements and assign new unique IDs
+export function cloneElementsWithNewIds(elements: PageElement[]): PageElement[] {
+  return elements.map((el) => {
+    const newId = `${el.type}-${Math.random().toString(36).substr(2, 9)}`;
+    const clonedChildren = el.children ? cloneElementsWithNewIds(el.children) : undefined;
+    return {
+      ...el,
+      id: newId,
+      props: JSON.parse(JSON.stringify(el.props)),
+      ...(clonedChildren ? { children: clonedChildren } : {}),
+    };
+  });
+}
 
 // Helper: Recursively update element properties in tree
 function updateElementInTree(
@@ -114,17 +135,20 @@ function insertElementIntoTree(
   });
 }
 
+const defaultTheme = builtInThemes[0]; // Modern is the default theme
+
 const initialPageData: PageData = {
   id: "page-1",
   name: "My Awesome Website",
+  themeId: "modern",
   elements: [
     {
       id: "section-1",
       type: "section",
       props: {
-        backgroundColor: "#f9fafb",
-        paddingTop: "80px",
-        paddingBottom: "80px",
+        backgroundColor: "var(--theme-bg)",
+        paddingTop: { desktop: "80px", tablet: "60px", mobile: "40px" },
+        paddingBottom: { desktop: "80px", tablet: "60px", mobile: "40px" },
         containerWidth: "max-w-5xl",
         flexDirection: "col",
         gap: "24px",
@@ -135,9 +159,9 @@ const initialPageData: PageData = {
           type: "heading",
           props: {
             text: "Design Your Perfect Website Visualizer",
-            fontSize: "48px",
-            fontWeight: "800",
-            color: "#111827",
+            fontSize: { desktop: "48px", tablet: "38px", mobile: "32px" },
+            fontWeight: "700",
+            color: "var(--theme-primary)",
             alignment: "center",
           },
         },
@@ -146,8 +170,8 @@ const initialPageData: PageData = {
           type: "text",
           props: {
             text: "This is a clean, modular visual page editor. Drag components from the sidebar, select them to edit their properties, and watch the canvas update in real-time. Full undo, redo, and responsive support are ready to go!",
-            fontSize: "18px",
-            color: "#4b5563",
+            fontSize: { desktop: "18px", tablet: "16px", mobile: "15px" },
+            color: "var(--theme-foreground)",
             alignment: "center",
           },
         },
@@ -157,11 +181,11 @@ const initialPageData: PageData = {
           props: {
             text: "Get Started Now",
             url: "#",
-            backgroundColor: "#2563eb",
-            textColor: "#ffffff",
+            backgroundColor: "var(--theme-primary)",
+            textColor: "var(--theme-bg)",
             paddingX: "24px",
             paddingY: "12px",
-            borderRadius: "6px",
+            borderRadius: "var(--radius-md)",
             fontSize: "16px",
             alignment: "center",
           },
@@ -175,6 +199,8 @@ const initialState: BuilderState = {
   pageData: initialPageData,
   selectedElementId: null,
   previewMode: "desktop",
+  activeTheme: defaultTheme,
+  customThemes: [],
   history: {
     past: [],
     future: [],
@@ -185,13 +211,18 @@ function builderReducer(
   state: BuilderState,
   action: BuilderAction
 ): BuilderState {
+  // Utility helper to save history frames
+  const createHistoryFrame = () => ({
+    pageData: JSON.parse(JSON.stringify(state.pageData)),
+    activeTheme: JSON.parse(JSON.stringify(state.activeTheme)),
+  });
+
   switch (action.type) {
     case "ADD_ELEMENT": {
       const { parentId, element, index } = action.payload;
 
-      // Save history
-      const past = [...state.history.past, JSON.parse(JSON.stringify(state.pageData))];
-      const future: PageData[] = [];
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
 
       const updatedElements = insertElementIntoTree(
         state.pageData.elements,
@@ -206,7 +237,7 @@ function builderReducer(
           ...state.pageData,
           elements: updatedElements,
         },
-        selectedElementId: element.id, // Auto-select the newly added element
+        selectedElementId: element.id,
         history: { past, future },
       };
     }
@@ -214,9 +245,8 @@ function builderReducer(
     case "UPDATE_ELEMENT": {
       const { id, props } = action.payload;
 
-      // Save history
-      const past = [...state.history.past, JSON.parse(JSON.stringify(state.pageData))];
-      const future: PageData[] = [];
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
 
       const updatedElements = updateElementInTree(
         state.pageData.elements,
@@ -237,9 +267,8 @@ function builderReducer(
     case "DELETE_ELEMENT": {
       const { id } = action.payload;
 
-      // Save history
-      const past = [...state.history.past, JSON.parse(JSON.stringify(state.pageData))];
-      const future: PageData[] = [];
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
 
       const { updatedElements } = removeElementFromTree(
         state.pageData.elements,
@@ -268,9 +297,8 @@ function builderReducer(
     case "MOVE_ELEMENT": {
       const { id, targetParentId, index } = action.payload;
 
-      // Save history
-      const past = [...state.history.past, JSON.parse(JSON.stringify(state.pageData))];
-      const future: PageData[] = [];
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
 
       // 1. Remove from current location
       const { updatedElements: intermediateElements, removedElement } =
@@ -305,19 +333,94 @@ function builderReducer(
       };
     }
 
+    case "APPLY_THEME": {
+      const { themeId } = action.payload;
+      const allThemes = [...builtInThemes, ...state.customThemes];
+      const targetTheme = allThemes.find((t) => t.id === themeId);
+
+      if (!targetTheme) return state;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
+
+      return {
+        ...state,
+        activeTheme: targetTheme,
+        pageData: {
+          ...state.pageData,
+          themeId: targetTheme.id,
+        },
+        history: { past, future },
+      };
+    }
+
+    case "UPDATE_THEME_PROPERTY": {
+      const { category, key, value } = action.payload;
+
+      const past = [...state.history.past, createHistoryFrame()];
+      const future: { pageData: PageData; activeTheme: Theme }[] = [];
+
+      const updatedTheme = {
+        ...state.activeTheme,
+        [category]: {
+          ...((state.activeTheme as any)[category] || {}),
+          [key]: value,
+        },
+      };
+
+      return {
+        ...state,
+        activeTheme: updatedTheme,
+        history: { past, future },
+      };
+    }
+
+    case "SAVE_CUSTOM_THEME": {
+      const { name } = action.payload;
+      const newId = `custom-${Date.now()}`;
+
+      const newTheme: Theme = {
+        ...state.activeTheme,
+        id: newId,
+        name,
+        isCustom: true,
+      };
+
+      const updatedCustomThemes = saveCustomTheme(newTheme);
+
+      return {
+        ...state,
+        customThemes: updatedCustomThemes,
+        activeTheme: newTheme,
+        pageData: {
+          ...state.pageData,
+          themeId: newTheme.id,
+        },
+      };
+    }
+
+    case "LOAD_STARTER": {
+      const { pageData, theme } = action.payload;
+      return {
+        ...state,
+        pageData,
+        activeTheme: theme,
+        selectedElementId: null,
+        history: { past: [], future: [] }, // clear history on loading new starter
+      };
+    }
+
     case "UNDO": {
       if (state.history.past.length === 0) return state;
 
       const past = [...state.history.past];
       const previous = past.pop()!;
-      const future = [
-        JSON.parse(JSON.stringify(state.pageData)),
-        ...state.history.future,
-      ];
+      const future = [createHistoryFrame(), ...state.history.future];
 
       return {
         ...state,
-        pageData: previous,
+        pageData: previous.pageData,
+        activeTheme: previous.activeTheme,
         history: { past, future },
       };
     }
@@ -327,29 +430,19 @@ function builderReducer(
 
       const future = [...state.history.future];
       const next = future.shift()!;
-      const past = [
-        ...state.history.past,
-        JSON.parse(JSON.stringify(state.pageData)),
-      ];
+      const past = [...state.history.past, createHistoryFrame()];
 
       return {
         ...state,
-        pageData: next,
+        pageData: next.pageData,
+        activeTheme: next.activeTheme,
         history: { past, future },
-      };
-    }
-
-    case "LOAD_PAGE": {
-      return {
-        ...state,
-        pageData: action.payload.pageData,
-        history: { past: [], future: [] },
       };
     }
 
     default:
       return state;
-}
+  }
 }
 
 interface BuilderContextType {
@@ -360,6 +453,10 @@ interface BuilderContextType {
   selectElement: (id: string | null) => void;
   moveElement: (id: string, targetParentId: string | null, index: number) => void;
   setPreviewMode: (mode: PreviewMode) => void;
+  applyTheme: (themeId: string) => void;
+  updateThemeProperty: (category: string, key: string, value: string) => void;
+  saveAsCustomTheme: (name: string) => void;
+  loadStarter: (pageData: PageData, theme: Theme) => void;
   undo: () => void;
   redo: () => void;
   canUndo: boolean;
@@ -405,6 +502,22 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
     dispatch({ type: "SET_PREVIEW_MODE", payload: { mode } });
   };
 
+  const applyTheme = (themeId: string) => {
+    dispatch({ type: "APPLY_THEME", payload: { themeId } });
+  };
+
+  const updateThemeProperty = (category: string, key: string, value: string) => {
+    dispatch({ type: "UPDATE_THEME_PROPERTY", payload: { category, key, value } });
+  };
+
+  const saveAsCustomTheme = (name: string) => {
+    dispatch({ type: "SAVE_CUSTOM_THEME", payload: { name } });
+  };
+
+  const loadStarter = (pageData: PageData, theme: Theme) => {
+    dispatch({ type: "LOAD_STARTER", payload: { pageData, theme } });
+  };
+
   const undo = () => {
     dispatch({ type: "UNDO" });
   };
@@ -433,6 +546,28 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
+  // Initialize custom themes from localStorage on client load
+  useEffect(() => {
+    const loadedCustomThemes = getCustomThemes();
+    if (loadedCustomThemes.length > 0) {
+      // Find what the page's current themeId points to and apply it if it's custom
+      const savedThemeId = state.pageData.themeId;
+      const savedCustom = loadedCustomThemes.find((t) => t.id === savedThemeId);
+
+      // Dispatch load starter with current elements but merged custom themes list
+      dispatch({
+        type: "LOAD_STARTER",
+        payload: {
+          pageData: state.pageData,
+          theme: savedCustom || state.activeTheme,
+        },
+      });
+
+      // Directly mutates the local State array
+      state.customThemes = loadedCustomThemes;
+    }
+  }, []);
+
   const canUndo = state.history.past.length > 0;
   const canRedo = state.history.future.length > 0;
 
@@ -446,6 +581,10 @@ export const BuilderProvider: React.FC<{ children: React.ReactNode }> = ({
         selectElement,
         moveElement,
         setPreviewMode,
+        applyTheme,
+        updateThemeProperty,
+        saveAsCustomTheme,
+        loadStarter,
         undo,
         redo,
         canUndo,

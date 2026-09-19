@@ -10,7 +10,7 @@ import { useBuilder } from "@/store/BuilderContext";
 import { componentRegistry } from "@/registry/ComponentRegistry";
 import { PageElement } from "@/types";
 import { CanvasElementWrapper } from "./CanvasElementWrapper";
-import { ArrowUpRight, Box, HelpCircle } from "lucide-react";
+import { ArrowUpRight, Box } from "lucide-react";
 
 // Helper Droppable component for Section children
 interface SectionDroppableContainerProps {
@@ -26,14 +26,15 @@ const SectionDroppableContainer: React.FC<SectionDroppableContainerProps> = ({
     id: section.id,
   });
 
-  const {
-    backgroundColor = "#ffffff",
-    paddingTop = "60px",
-    paddingBottom = "60px",
-    containerWidth = "max-w-5xl",
-    flexDirection = "col",
-    gap = "16px",
-  } = section.props;
+  const { state } = useBuilder();
+  const { previewMode } = state;
+
+  const backgroundColor = section.props.backgroundColor ?? "var(--theme-bg)";
+  const paddingTop = section.props.paddingTop ?? "var(--theme-section-spacing)";
+  const paddingBottom = section.props.paddingBottom ?? "var(--theme-section-spacing)";
+  const containerWidth = section.props.containerWidth ?? "max-w-5xl";
+  const flexDirection = section.props.flexDirection ?? "col";
+  const gap = section.props.gap ?? "16px";
 
   const widthClass =
     containerWidth === "max-w-3xl"
@@ -85,7 +86,7 @@ const SectionDroppableContainer: React.FC<SectionDroppableContainerProps> = ({
 
 export const Canvas: React.FC = () => {
   const { state, selectElement } = useBuilder();
-  const { pageData, previewMode } = state;
+  const { pageData, previewMode, activeTheme } = state;
 
   const [mounted, setMounted] = useState(false);
 
@@ -121,6 +122,27 @@ export const Canvas: React.FC = () => {
       onClick={() => selectElement(null)} // Clear selection on canvas background click
       className="flex-1 bg-zinc-100 p-8 overflow-auto flex justify-center items-start select-none"
     >
+      {/* Dynamic Theme Injector via CSS custom variables scoped to #canvas-root */}
+      <style>{`
+        #canvas-root {
+          --theme-bg: ${activeTheme.colors.background};
+          --theme-foreground: ${activeTheme.colors.foreground};
+          --theme-primary: ${activeTheme.colors.primary};
+          --theme-secondary: ${activeTheme.colors.secondary};
+          --theme-muted: ${activeTheme.colors.muted};
+          --theme-border: ${activeTheme.colors.border};
+          --theme-accent: ${activeTheme.colors.accent};
+          --theme-heading-font: ${activeTheme.typography.headingFont};
+          --theme-body-font: ${activeTheme.typography.bodyFont};
+          --theme-heading-weight: ${activeTheme.typography.headingWeight};
+          --theme-body-weight: ${activeTheme.typography.bodyWeight};
+          --radius-sm: ${activeTheme.radius.sm};
+          --radius-md: ${activeTheme.radius.md};
+          --radius-lg: ${activeTheme.radius.lg};
+          --theme-section-spacing: ${activeTheme.spacing.section};
+        }
+      `}</style>
+
       <div
         ref={setNodeRef}
         className={`bg-white min-h-[600px] shadow-lg rounded-xl border border-zinc-200/80 transition-all duration-300 overflow-hidden flex flex-col relative ${
@@ -143,7 +165,7 @@ export const Canvas: React.FC = () => {
         </div>
 
         {/* Live Canvas Content */}
-        <div className="flex-1 flex flex-col min-h-0 bg-white">
+        <div id="canvas-root" className="flex-1 flex flex-col min-h-0 bg-white transition-colors duration-300" style={{ backgroundColor: "var(--theme-bg)" }}>
           {pageData.elements.length === 0 ? (
             <div
               id="canvas-empty"
@@ -154,12 +176,8 @@ export const Canvas: React.FC = () => {
               </div>
               <h3 className="text-sm font-bold text-zinc-700">Your Canvas is Empty</h3>
               <p className="text-xs text-zinc-400 max-w-[280px] mt-1.5 leading-relaxed">
-                Start by dragging a <strong className="text-zinc-600 font-semibold">Section</strong> container from the palette on the left here to build your page grid.
+                Start by dragging a <strong className="text-zinc-600 font-semibold">Section</strong> or pre-made <strong className="text-zinc-600 font-semibold">Section Blueprint</strong> from the sidebar.
               </p>
-              <div className="mt-4 flex items-center gap-1 text-[11px] text-blue-600 font-medium">
-                <span>See component registry tips</span>
-                <ArrowUpRight className="h-3 w-3" />
-              </div>
             </div>
           ) : (
             <SortableContext
@@ -192,3 +210,4 @@ export const Canvas: React.FC = () => {
     </div>
   );
 };
+export default Canvas;

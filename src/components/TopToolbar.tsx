@@ -9,16 +9,21 @@ import {
   Undo2,
   Redo2,
   ExternalLink,
+  FolderPlus,
 } from "lucide-react";
 
-export const TopToolbar: React.FC = () => {
+interface TopToolbarProps {
+  onNewProjectClick: () => void;
+}
+
+export const TopToolbar: React.FC<TopToolbarProps> = ({ onNewProjectClick }) => {
   const { state, setPreviewMode, undo, redo, canUndo, canRedo } = useBuilder();
 
   return (
-    <header className="h-14 border-b border-zinc-200 bg-white flex items-center justify-between px-6 select-none shadow-sm shrink-0">
+    <header className="h-14 border-b border-zinc-200 bg-white flex items-center justify-between px-6 select-none shadow-sm shrink-0 z-40">
       {/* Logo Section */}
       <div className="flex items-center gap-2.5">
-        <div className="h-7 w-7 rounded bg-blue-600 flex items-center justify-center text-white font-black text-xs tracking-wider">
+        <div className="h-7 w-7 rounded bg-indigo-600 flex items-center justify-center text-white font-black text-xs tracking-wider">
           WB
         </div>
         <div className="flex flex-col">
@@ -26,7 +31,7 @@ export const TopToolbar: React.FC = () => {
             Web Builder
           </span>
           <span className="text-[10px] text-zinc-400 font-medium">
-            Local Prototype v1.0
+            Personal Layout Suite v2.0
           </span>
         </div>
       </div>
@@ -80,7 +85,7 @@ export const TopToolbar: React.FC = () => {
             title="Undo (Ctrl+Z)"
             className={`p-1.5 rounded-md border transition-all duration-150 ${
               canUndo
-                ? "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 cursor-pointer"
+                ? "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 cursor-pointer animate-press-feedback"
                 : "bg-zinc-50 border-zinc-100 text-zinc-300 cursor-not-allowed"
             }`}
           >
@@ -92,7 +97,7 @@ export const TopToolbar: React.FC = () => {
             title="Redo (Ctrl+Shift+Z)"
             className={`p-1.5 rounded-md border transition-all duration-150 ${
               canRedo
-                ? "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 cursor-pointer"
+                ? "bg-white hover:bg-zinc-50 border-zinc-200 text-zinc-700 cursor-pointer animate-press-feedback"
                 : "bg-zinc-50 border-zinc-100 text-zinc-300 cursor-not-allowed"
             }`}
           >
@@ -100,6 +105,16 @@ export const TopToolbar: React.FC = () => {
           </button>
         </div>
 
+        {/* Create New Website trigger */}
+        <button
+          onClick={onNewProjectClick}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-indigo-200 hover:border-indigo-300 hover:bg-indigo-50/50 text-indigo-700 text-xs font-bold cursor-pointer transition-all duration-150"
+        >
+          <FolderPlus className="h-4 w-4" />
+          <span>New Website</span>
+        </button>
+
+        {/* JSON Export */}
         <button
           onClick={() => {
             alert(
@@ -117,3 +132,4 @@ export const TopToolbar: React.FC = () => {
     </header>
   );
 };
+export default TopToolbar;

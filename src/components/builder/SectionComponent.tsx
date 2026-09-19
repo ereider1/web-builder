@@ -1,5 +1,7 @@
 import React from "react";
 import { PageElement } from "@/types";
+import { useBuilder } from "@/store/BuilderContext";
+import { resolveResponsive } from "@/utils/responsive";
 
 interface SectionComponentProps {
   element: PageElement;
@@ -11,14 +13,30 @@ export const SectionComponent: React.FC<SectionComponentProps> = ({
   element,
   children,
 }) => {
-  const {
-    backgroundColor = "#ffffff",
-    paddingTop = "40px",
-    paddingBottom = "40px",
-    containerWidth = "max-w-5xl",
-    flexDirection = "col",
-    gap = "16px",
-  } = element.props;
+  const { state } = useBuilder();
+  const { previewMode } = state;
+
+  const backgroundColor = resolveResponsive(
+    element.props.backgroundColor ?? "var(--theme-bg)",
+    previewMode
+  );
+  const paddingTop = resolveResponsive(
+    element.props.paddingTop ?? "var(--theme-section-spacing)",
+    previewMode
+  );
+  const paddingBottom = resolveResponsive(
+    element.props.paddingBottom ?? "var(--theme-section-spacing)",
+    previewMode
+  );
+  const containerWidth = resolveResponsive(
+    element.props.containerWidth ?? "max-w-5xl",
+    previewMode
+  );
+  const flexDirection = resolveResponsive(
+    element.props.flexDirection ?? "col",
+    previewMode
+  );
+  const gap = resolveResponsive(element.props.gap ?? "16px", previewMode);
 
   const widthClass =
     containerWidth === "max-w-3xl"
@@ -42,10 +60,11 @@ export const SectionComponent: React.FC<SectionComponentProps> = ({
     >
       <div
         style={{ gap }}
-        className={`mx-auto px-6 w-full ${widthClass} ${flexClass} min-h-[100px]`}
+        className={`mx-auto px-6 w-full ${widthClass} ${flexClass} min-h-[50px]`}
       >
         {children}
       </div>
     </section>
   );
 };
+export default SectionComponent;
